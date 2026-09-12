@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Questbyte Labs · Wallpaper Console</title>
+<style>
+  :root {
+    --bg: #0B0F1A; --s1: #121826; --s2: #1A2233; --line: #263044;
+    --text: #F4F4F7; --muted: #9AA3B5; --faint: #5B6577;
+    --violet: #7C5CFF; --cyan: #22D3EE; --danger: #FF5370; --ok: #3DDC97;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
+  a { color: var(--cyan); }
+  header { display: flex; align-items: center; gap: 12px; padding: 18px 28px; border-bottom: 1px solid var(--line); }
+  header .brand { font-weight: 800; letter-spacing: .3px; }
+  header .brand span { background: linear-gradient(135deg, var(--violet), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  header .labs { color: var(--faint); letter-spacing: 3px; font-size: 11px; margin-left: 6px; }
+  header .spacer { flex: 1; }
+  header .who { color: var(--muted); font-size: 13px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 28px; display: grid; gap: 28px; grid-template-columns: 340px 1fr; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--s1); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+  h2 { margin: 0 0 14px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+  input[type=text], input[type=email], input[type=password], select {
+    width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--s2); color: var(--text); font: inherit; outline: none;
+  }
+  input:focus, select:focus { border-color: var(--violet); }
+  .drop { margin-top: 12px; border: 1.5px dashed var(--line); border-radius: 14px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; transition: .15s; }
+  .drop.over, .drop:hover { border-color: var(--cyan); color: var(--text); background: rgba(34,211,238,.05); }
+  .drop input { display: none; }
+  .drop .pv { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+  .drop .pv img { width: 56px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+  button { font: inherit; border: 0; border-radius: 10px; padding: 11px 16px; cursor: pointer; font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  .primary { width: 100%; margin-top: 16px; color: #fff; background: linear-gradient(135deg, var(--violet), var(--cyan)); }
+  .ghost { background: var(--s2); color: var(--text); border: 1px solid var(--line); }
+  .danger { background: rgba(255,83,112,.12); color: var(--danger); }
+  .msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
+  .msg.err { color: var(--danger); } .msg.ok { color: var(--ok); }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar input, .toolbar select { width: auto; flex: 1; min-width: 160px; }
+  .count { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .tile { background: var(--s2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; position: relative; }
+  .tile.inactive img { filter: grayscale(1) brightness(.5); }
+  .tile img { width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block; background: #000; }
+  .tile .meta { padding: 10px 10px 8px; }
+  .tile .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .c { color: var(--muted); font-size: 12px; }
+  .tile .acts { display: flex; gap: 6px; padding: 0 10px 10px; }
+  .tile .acts button { flex: 1; padding: 7px 0; font-size: 12px; }
+  .badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.6); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 999px; }
+  .empty { color: var(--faint); padding: 40px; text-align: center; grid-column: 1/-1; }
+  .progress { height: 4px; background: var(--s2); border-radius: 2px; overflow: hidden; margin-top: 14px; display: none; }
+  .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .2s; }
+  .locked { opacity: .45; pointer-events: none; }
+  .hint { font-size: 12px; color: var(--faint); margin-top: 10px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; }
+  .modal .card { width: min(420px, 92vw); }
+  .modal .row { display: flex; gap: 10px; margin-top: 16px; }
+  .modal .row button { flex: 1; }
+</style>
+</head>
+<body>
+<header>
+  <svg width="26" height="26" viewBox="0 0 512 512" aria-hidden="true">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs>
+    <g transform="translate(256 256) translate(-238 -222)">
+      <g fill="none" stroke="url(#g)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M276.8 358.2 A120 120 0 1 1 374.2 260.8"/><line x1="226" y1="210" x2="396" y2="380"/><polyline points="332,380 396,380 396,316"/>
+      </g>
+      <g fill="url(#g)"><rect x="112" y="96" width="28" height="28" rx="6"/><rect x="78" y="62" width="20" height="20" rx="5"/><rect x="50" y="34" width="14" height="14" rx="4"/></g>
+    </g>
+  </svg>
+  <div class="brand">QUEST<span>BYTE</span><span class="labs">LABS</span></div>
+  <div style="color:var(--faint)">·</div>
+  <div style="color:var(--muted)">Wallpaper Console</div>
+  <div class="spacer"></div>
+  <div class="who" id="who"></div>
+  <button class="ghost" id="logout" style="display:none">Sign out</button>
+</header>
+
+<main>
+  <aside>
+    <section class="card" id="login">
+      <h2>Sign in</h2>
+      <label>Email</label><input type="email" id="email" autocomplete="username">
+      <label>Password</label><input type="password" id="password" autocomplete="current-password">
+      <button class="primary" id="signin">Sign in</button>
+      <div class="msg" id="loginMsg"></div>
+      <p class="hint">Create this account in Supabase → Authentication → Users, and run <code>supabase/admin.sql</code> with the same email.</p>
+    </section>
+
+    <section class="card locked" id="add" style="margin-top:20px">
+      <h2>Add wallpapers</h2>
+      <div class="drop" id="drop">
+        <input type="file" id="files" accept="image/*" multiple>
+        <div id="dropText">Drop images here or click to choose<br><small>Portrait, 1080×1920 or larger. Several at once is fine.</small></div>
+        <div class="pv" id="pv"></div>
+      </div>
+      <label>Category</label>
+      <input type="text" id="category" list="cats" placeholder="e.g. Nature">
+      <datalist id="cats"></datalist>
+      <label>Title <span style="color:var(--faint)">(optional — file name is used if blank; ignored for multiple files)</span></label>
+      <input type="text" id="title" placeholder="e.g. Mountain Dawn">
+      <button class="primary" id="upload" disabled>Upload</button>
+      <div class="progress" id="prog"><i></i></div>
+      <div class="msg" id="addMsg"></div>
+      <p class="hint">Each image is uploaded at full size plus a 480px thumbnail generated in your browser, then a row is inserted with both URLs.</p>
+    </section>
+  </aside>
+
+  <section class="card">
+    <div class="toolbar">
+      <input type="text" id="q" placeholder="Search title…">
+      <select id="filterCat"><option value="">All categories</option></select>
+      <select id="filterActive"><option value="">Active & hidden</option><option value="1">Active only</option><option value="0">Hidden only</option></select>
+      <span class="count" id="count"></span>
+      <button class="ghost" id="refresh">Refresh</button>
+    </div>
+    <div class="grid" id="grid"><div class="empty">Loading…</div></div>
+  </section>
+</main>
+
+<div class="modal" id="confirm">
+  <div class="card">
+    <h2>Delete wallpaper</h2>
+    <div id="confirmText"></div>
+    <div class="row"><button class="ghost" id="cancelDel">Cancel</button><button class="danger" id="okDel">Delete</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ---- Project settings (same values as local.properties; the publishable key is public) ----
+const SUPABASE_URL = "https://djcoqugnvywzczgzahfx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_zNFDZpGgLG19u6hNu0oxMg_ee2soQtN";
+const BUCKET = "Wallpaper";
+const THUMB_WIDTH = 480;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id) => document.getElementById(id);
+let rows = [], session = null, pending = [];
+
+// ---- Auth ----
+async function refreshSession() {
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  const authed = !!session;
+  $("login").style.display = authed ? "none" : "";
+  $("add").classList.toggle("locked", !authed);
+  $("logout").style.display = authed ? "" : "none";
+  $("who").textContent = authed ? session.user.email : "Read-only · sign in to edit";
+  document.querySelectorAll(".tile button").forEach(b => b.disabled = !authed);
+  load();
+}
+$("signin").onclick = async () => {
+  msg("loginMsg", "");
+  const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+  if (error) return msg("loginMsg", error.message, "err");
+  $("password").value = "";
+  refreshSession();
+};
+$("password").addEventListener("keydown", e => { if (e.key === "Enter") $("signin").click(); });
+$("logout").onclick = async () => { await sb.auth.signOut(); refreshSession(); };
+
+// ---- List ----
+async function load() {
+  const { data, error } = await sb.from("wallpapers").select("*").order("created_at", { ascending: false });
+  if (error) { $("grid").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+  rows = data;
+  const cats = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();
+  $("cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
+  const sel = $("filterCat").value;
+  $("filterCat").innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option ${c === sel ? "selected" : ""}>${esc(c)}</option>`).join("");
+  render();
+}
+function render() {
+  const q = $("q").value.trim().toLowerCase(), cat = $("filterCat").value, act = $("filterActive").value;
+  const list = rows.filter(r =>
+    (!q || (r.title || "").toLowerCase().includes(q)) &&
+    (!cat || r.category === cat) &&
+    (act === "" || String(r.is_active ? 1 : 0) === act));
+  $("count").textContent = `${list.length} of ${rows.length}`;
+  if (!list.length) { $("grid").innerHTML = `<div class="empty">No wallpapers${rows.length ? " match" : " yet — add one on the left"}.</div>`; return; }
+  $("grid").innerHTML = list.map(r => `
+    <div class="tile ${r.is_active ? "" : "inactive"}" data-id="${r.id}">
+      ${r.is_active ? "" : `<span class="badge">Hidden</span>`}
+      <a href="${esc(r.image_url)}" target="_blank" rel="noopener"><img src="${esc(r.thumb_url)}" loading="lazy" alt=""></a>
+      <div class="meta"><div class="t">${esc(r.title || "Untitled")}</div><div class="c">${esc(r.category || "—")}</div></div>
+      <div class="acts">
+        <button class="ghost" data-act="toggle" ${session ? "" : "disabled"}>${r.is_active ? "Hide" : "Show"}</button>
+        <button class="danger" data-act="del" ${session ? "" : "disabled"}>Delete</button>
+      </div>
+    </div>`).join("");
+}
+["q", "filterCat", "filterActive"].forEach(id => $(id).addEventListener("input", render));
+$("refresh").onclick = load;
+
+$("grid").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-act]"); if (!btn) return;
+  const id = btn.closest(".tile").dataset.id, row = rows.find(r => r.id === id);
+  if (btn.dataset.act === "toggle") {
+    const { error } = await sb.from("wallpapers").update({ is_active: !row.is_active }).eq("id", id);
+    if (error) alert(error.message); else load();
+  } else if (btn.dataset.act === "del") {
+    confirmDelete(row);
+  }
+});
+
+function confirmDelete(row) {
+  $("confirmText").innerHTML = `Delete <b>${esc(row.title || "Untitled")}</b>? This removes the row and its files from storage. Tip: use <i>Hide</i> if you might want it back.`;
+  $("confirm").style.display = "flex";
+  $("okDel").onclick = async () => {
+    $("confirm").style.display = "none";
+    const { error } = await sb.from("wallpapers").delete().eq("id", row.id);
+    if (error) return alert(error.message);
+    const paths = [row.image_url, row.thumb_url].map(storagePath).filter(Boolean);
+    if (paths.length) await sb.storage.from(BUCKET).remove([...new Set(paths)]);
+    load();
+  };
+}
+$("cancelDel").onclick = () => $("confirm").style.display = "none";
+
+// ---- Upload ----
+const drop = $("drop"), files = $("files");
+drop.onclick = (e) => { if (e.target !== files) files.click(); };
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); setPending([...e.dataTransfer.files]); };
+files.onchange = () => setPending([...files.files]);
+
+function setPending(list) {
+  pending = list.filter(f => f.type.startsWith("image/"));
+  $("pv").innerHTML = pending.map(f => `<img src="${URL.createObjectURL(f)}" alt="">`).join("");
+  $("dropText").textContent = pending.length ? `${pending.length} image${pending.length > 1 ? "s" : ""} selected` : "Drop images here or click to choose";
+  $("upload").disabled = !pending.length;
+}
+
+$("upload").onclick = async () => {
+  const category = $("category").value.trim() || null;
+  const titleInput = $("title").value.trim();
+  const bar = $("prog"); bar.style.display = "block";
+  $("upload").disabled = true; msg("addMsg", "");
+  let done = 0;
+  try {
+    for (const f of pending) {
+      const stem = f.name.replace(/\.[^.]+$/, "");
+      const title = (pending.length === 1 && titleInput) ? titleInput : prettify(stem);
+      const base = `${Date.now()}-${slug(stem)}`;
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+
+      msg("addMsg", `Uploading ${title}…`);
+      const full = await put(`full/${base}.${ext}`, f, f.type);
+      const thumbBlob = await makeThumb(f);
+      const thumb = await put(`thumbs/${base}.jpg`, thumbBlob, "image/jpeg");
+
+      const { error } = await sb.from("wallpapers").insert({ title, category, image_url: full, thumb_url: thumb });
+      if (error) throw error;
+      done++; bar.firstElementChild.style.width = `${(done / pending.length) * 100}%`;
+    }
+    msg("addMsg", `Added ${done} wallpaper${done > 1 ? "s" : ""}.`, "ok");
+    setPending([]); $("title").value = ""; files.value = "";
+    load();
+  } catch (err) {
+    msg("addMsg", `${err.message || err} (${done} of ${pending.length} added)`, "err");
+    $("upload").disabled = false;
+  } finally {
+    setTimeout(() => { bar.style.display = "none"; bar.firstElementChild.style.width = "0"; }, 1200);
+  }
+};
+
+async function put(path, body, contentType) {
+  const { error } = await sb.storage.from(BUCKET).upload(path, body, { contentType, upsert: false, cacheControl: "31536000" });
+  if (error) throw error;
+  return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+function makeThumb(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, THUMB_WIDTH / img.width);
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("Thumbnail failed")), "image/jpeg", 0.82);
+    };
+    img.onerror = () => reject(new Error(`Can't read ${file.name}`));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ---- Helpers ----
+function storagePath(url) {
+  const marker = `/object/public/${BUCKET}/`;
+  const i = (url || "").indexOf(marker);
+  return i < 0 ? null : decodeURIComponent(url.slice(i + marker.length));
+}
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "wallpaper";
+const prettify = (s) => s.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, c => c.toUpperCase());
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function msg(id, text, cls = "") { const el = $(id); el.textContent = text; el.className = `msg ${cls}`; }
+
+sb.auth.onAuthStateChange(() => refreshSession());
+refreshSession();
+</script>
+</body>
+</html>
