@@ -61,7 +61,7 @@
   .hint { font-size: 12px; color: var(--faint); margin-top: 10px; }
   .tile .edit { display: none; padding: 0 10px 10px; gap: 6px; flex-direction: column; }
   .tile.editing .edit { display: flex; } .tile.editing .meta, .tile.editing .acts { display: none; }
-  .tile .edit input { padding: 8px 10px; font-size: 13px; }
+  .tile .edit input, .tile .edit select { padding: 8px 10px; font-size: 13px; }
   .tile .edit .row { display: flex; gap: 6px; } .tile .edit .row button { flex: 1; padding: 7px 0; font-size: 12px; }
   .bulk { display: flex; gap: 8px; align-items: center; margin: -6px 0 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
   .bulk input { width: 180px; padding: 8px 10px; }
@@ -85,7 +85,8 @@
   </svg>
   <div class="brand">QUEST<span>BYTE</span><span class="labs">LABS</span></div>
   <div style="color:var(--faint)">·</div>
-  <div style="color:var(--muted)">Wallpaper Console</div>
+  <select id="appSel" title="Which app you are managing" style="width:auto;min-width:200px;padding:8px 10px"></select>
+  <button class="ghost" id="newApp" style="padding:8px 12px;font-size:13px" disabled>+ New app</button>
   <div class="spacer"></div>
   <div class="who" id="who"></div>
   <button class="ghost" id="logout" style="display:none">Sign out</button>
@@ -117,7 +118,7 @@
       <button class="primary" id="upload" disabled>Upload</button>
       <div class="progress" id="prog"><i></i></div>
       <div class="msg" id="addMsg"></div>
-      <p class="hint">Each image is uploaded at full size plus a 480px thumbnail generated in your browser, then a row is inserted with both URLs.</p>
+      <p class="hint">Uploads go to the app selected in the header. Each image is stored at full size plus a 480px thumbnail generated in your browser.</p>
     </section>
   </aside>
 
@@ -138,6 +139,16 @@
   </section>
 </main>
 
+<div class="modal" id="appModal">
+  <div class="card">
+    <h2>New app</h2>
+    <label>Display name</label><input type="text" id="appName" placeholder="e.g. Anime Wallpapers">
+    <label>App id <span style="color:var(--faint)">(letters/numbers, no spaces — goes into the app build as APP_ID)</span></label>
+    <input type="text" id="appId" placeholder="e.g. anime">
+    <div class="msg" id="appMsg"></div>
+    <div class="row"><button class="ghost" id="cancelApp">Cancel</button><button class="primary" style="margin:0" id="okApp">Create</button></div>
+  </div>
+</div>
 <div class="modal" id="confirm">
   <div class="card">
     <h2>Delete wallpaper</h2>
@@ -156,7 +167,31 @@ const THUMB_WIDTH = 480;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (id) => document.getElementById(id);
-let rows = [], session = null, pending = [];
+let rows = [], session = null, pending = [], apps = [], currentApp = null;
+
+// ---- Apps (multi-app support: every wallpaper belongs to one app) ----
+async function loadApps() {
+  const { data, error } = await sb.from("apps").select("*").order("created_at");
+  if (error) { $("grid").innerHTML = `<div class="empty">${esc(error.message)} — run supabase/multi-app.sql</div>`; return false; }
+  apps = data;
+  let remembered = null; try { remembered = localStorage.getItem("app"); } catch {}
+  currentApp = apps.find(a => a.id === (currentApp || remembered))?.id || apps[0]?.id || null;
+  $("appSel").innerHTML = apps.map(a => `<option value="${esc(a.id)}" ${a.id === currentApp ? "selected" : ""}>${esc(a.name)} · ${esc(a.id)}</option>`).join("") || `<option>No apps yet</option>`;
+  return true;
+}
+$("appSel").onchange = () => { currentApp = $("appSel").value; try { localStorage.setItem("app", currentApp); } catch {} load(); };
+$("newApp").onclick = () => { $("appName").value = ""; $("appId").value = ""; msg("appMsg", ""); $("appModal").style.display = "flex"; $("appName").focus(); };
+$("cancelApp").onclick = () => $("appModal").style.display = "none";
+$("appName").addEventListener("input", () => { if (!$("appId").dataset.touched) $("appId").value = slug($("appName").value).replace(/-/g, ""); });
+$("appId").addEventListener("input", () => { $("appId").dataset.touched = "1"; });
+$("okApp").onclick = async () => {
+  const name = $("appName").value.trim(), id = $("appId").value.trim().toLowerCase();
+  if (!name || !/^[a-z0-9]{2,30}$/.test(id)) return msg("appMsg", "Name required; id must be 2–30 letters/numbers.", "err");
+  const { error } = await sb.from("apps").insert({ id, name });
+  if (error) return msg("appMsg", error.message, "err");
+  $("appModal").style.display = "none"; currentApp = id; try { localStorage.setItem("app", id); } catch {}
+  await loadApps(); load();
+};
 
 // ---- Auth ----
 async function refreshSession() {
@@ -169,7 +204,8 @@ async function refreshSession() {
   $("who").textContent = authed ? session.user.email : "Read-only · sign in to edit";
   document.querySelectorAll(".tile button").forEach(b => b.disabled = !authed);
   $("bulkApply").disabled = !authed || !$("bulkCat").value.trim();
-  load();
+  $("newApp").disabled = !authed;
+  if (await loadApps()) load();
 }
 $("signin").onclick = async () => {
   msg("loginMsg", "");
@@ -183,7 +219,8 @@ $("logout").onclick = async () => { await sb.auth.signOut(); refreshSession(); }
 
 // ---- List ----
 async function load() {
-  const { data, error } = await sb.from("wallpapers").select("*").order("created_at", { ascending: false });
+  if (!currentApp) { $("grid").innerHTML = `<div class="empty">Create an app first.</div>`; return; }
+  const { data, error } = await sb.from("wallpapers").select("*").eq("app_id", currentApp).order("created_at", { ascending: false });
   if (error) { $("grid").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
   rows = data;
   const cats = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();
@@ -213,6 +250,7 @@ function render() {
       <div class="edit">
         <input type="text" data-f="title" value="${esc(r.title || "")}" placeholder="Title">
         <input type="text" data-f="category" list="cats" value="${esc(r.category || "")}" placeholder="Category">
+        <select data-f="app_id">${apps.map(a => `<option value="${esc(a.id)}" ${a.id === r.app_id ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>
         <div class="row"><button class="ghost" data-act="cancel">Cancel</button><button class="primary" style="margin:0" data-act="save">Save</button></div>
       </div>
     </div>`).join("");
@@ -247,7 +285,8 @@ $("grid").addEventListener("click", async (e) => {
   if (btn.dataset.act === "save") {
     const title = tile.querySelector("[data-f=title]").value.trim() || null;
     const category = tile.querySelector("[data-f=category]").value.trim() || null;
-    const { error } = await sb.from("wallpapers").update({ title, category }).eq("id", id);
+    const app_id = tile.querySelector("[data-f=app_id]").value;
+    const { error } = await sb.from("wallpapers").update({ title, category, app_id }).eq("id", id);
     if (error) alert(error.message); else load();
     return;
   }
@@ -302,11 +341,11 @@ $("upload").onclick = async () => {
       const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
 
       msg("addMsg", `Uploading ${title}…`);
-      const full = await put(`full/${base}.${ext}`, f, f.type);
+      const full = await put(`${currentApp}/full/${base}.${ext}`, f, f.type);
       const thumbBlob = await makeThumb(f);
-      const thumb = await put(`thumbs/${base}.jpg`, thumbBlob, "image/jpeg");
+      const thumb = await put(`${currentApp}/thumbs/${base}.jpg`, thumbBlob, "image/jpeg");
 
-      const { error } = await sb.from("wallpapers").insert({ title, category, image_url: full, thumb_url: thumb });
+      const { error } = await sb.from("wallpapers").insert({ title, category, image_url: full, thumb_url: thumb, app_id: currentApp });
       if (error) throw error;
       done++; bar.firstElementChild.style.width = `${(done / pending.length) * 100}%`;
     }
