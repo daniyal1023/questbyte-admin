@@ -59,6 +59,13 @@
   .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .2s; }
   .locked { opacity: .45; pointer-events: none; }
   .hint { font-size: 12px; color: var(--faint); margin-top: 10px; }
+  .tile .edit { display: none; padding: 0 10px 10px; gap: 6px; flex-direction: column; }
+  .tile.editing .edit { display: flex; } .tile.editing .meta, .tile.editing .acts { display: none; }
+  .tile .edit input { padding: 8px 10px; font-size: 13px; }
+  .tile .edit .row { display: flex; gap: 6px; } .tile .edit .row button { flex: 1; padding: 7px 0; font-size: 12px; }
+  .bulk { display: flex; gap: 8px; align-items: center; margin: -6px 0 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .bulk input { width: 180px; padding: 8px 10px; }
+  .bulk button { padding: 8px 12px; font-size: 13px; }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; }
   .modal .card { width: min(420px, 92vw); }
   .modal .row { display: flex; gap: 10px; margin-top: 16px; }
@@ -122,6 +129,11 @@
       <span class="count" id="count"></span>
       <button class="ghost" id="refresh">Refresh</button>
     </div>
+    <div class="bulk" id="bulk">
+      <span>Set category for everything shown:</span>
+      <input type="text" id="bulkCat" list="cats" placeholder="e.g. Nature">
+      <button class="ghost" id="bulkApply" disabled>Apply to shown</button>
+    </div>
     <div class="grid" id="grid"><div class="empty">Loading…</div></div>
   </section>
 </main>
@@ -156,6 +168,7 @@ async function refreshSession() {
   $("logout").style.display = authed ? "" : "none";
   $("who").textContent = authed ? session.user.email : "Read-only · sign in to edit";
   document.querySelectorAll(".tile button").forEach(b => b.disabled = !authed);
+  $("bulkApply").disabled = !authed || !$("bulkCat").value.trim();
   load();
 }
 $("signin").onclick = async () => {
@@ -193,17 +206,51 @@ function render() {
       <a href="${esc(r.image_url)}" target="_blank" rel="noopener"><img src="${esc(r.thumb_url)}" loading="lazy" alt=""></a>
       <div class="meta"><div class="t">${esc(r.title || "Untitled")}</div><div class="c">${esc(r.category || "—")}</div></div>
       <div class="acts">
+        <button class="ghost" data-act="edit" ${session ? "" : "disabled"}>Edit</button>
         <button class="ghost" data-act="toggle" ${session ? "" : "disabled"}>${r.is_active ? "Hide" : "Show"}</button>
         <button class="danger" data-act="del" ${session ? "" : "disabled"}>Delete</button>
+      </div>
+      <div class="edit">
+        <input type="text" data-f="title" value="${esc(r.title || "")}" placeholder="Title">
+        <input type="text" data-f="category" list="cats" value="${esc(r.category || "")}" placeholder="Category">
+        <div class="row"><button class="ghost" data-act="cancel">Cancel</button><button class="primary" style="margin:0" data-act="save">Save</button></div>
       </div>
     </div>`).join("");
 }
 ["q", "filterCat", "filterActive"].forEach(id => $(id).addEventListener("input", render));
+$("grid").addEventListener("keydown", (e) => {
+  const tile = e.target.closest(".tile.editing"); if (!tile) return;
+  if (e.key === "Enter") tile.querySelector("[data-act=save]").click();
+  if (e.key === "Escape") tile.querySelector("[data-act=cancel]").click();
+});
+// Bulk category: applies to whatever the current search/filters show.
+function shownRows() {
+  const q = $("q").value.trim().toLowerCase(), cat = $("filterCat").value, act = $("filterActive").value;
+  return rows.filter(r => (!q || (r.title || "").toLowerCase().includes(q)) && (!cat || r.category === cat) && (act === "" || String(r.is_active ? 1 : 0) === act));
+}
+$("bulkCat").addEventListener("input", () => { $("bulkApply").disabled = !session || !$("bulkCat").value.trim(); });
+$("bulkApply").onclick = async () => {
+  const category = $("bulkCat").value.trim(), ids = shownRows().map(r => r.id);
+  if (!category || !ids.length) return;
+  if (!confirm(`Set category "${category}" on ${ids.length} wallpaper${ids.length > 1 ? "s" : ""}?`)) return;
+  const { error } = await sb.from("wallpapers").update({ category }).in("id", ids);
+  if (error) alert(error.message); else { $("bulkCat").value = ""; $("bulkApply").disabled = true; load(); }
+};
 $("refresh").onclick = load;
 
 $("grid").addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-act]"); if (!btn) return;
   const id = btn.closest(".tile").dataset.id, row = rows.find(r => r.id === id);
+  const tile = btn.closest(".tile");
+  if (btn.dataset.act === "edit") { tile.classList.add("editing"); tile.querySelector("[data-f=title]").focus(); return; }
+  if (btn.dataset.act === "cancel") { tile.classList.remove("editing"); return; }
+  if (btn.dataset.act === "save") {
+    const title = tile.querySelector("[data-f=title]").value.trim() || null;
+    const category = tile.querySelector("[data-f=category]").value.trim() || null;
+    const { error } = await sb.from("wallpapers").update({ title, category }).eq("id", id);
+    if (error) alert(error.message); else load();
+    return;
+  }
   if (btn.dataset.act === "toggle") {
     const { error } = await sb.from("wallpapers").update({ is_active: !row.is_active }).eq("id", id);
     if (error) alert(error.message); else load();
