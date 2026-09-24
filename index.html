@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0F1A">
 <title>Questbyte Labs · Wallpaper Console</title>
 <style>
   :root {
@@ -18,7 +19,11 @@
   header .brand span { background: linear-gradient(135deg, var(--violet), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   header .labs { color: var(--faint); letter-spacing: 3px; font-size: 11px; margin-left: 6px; }
   header .spacer { flex: 1; }
-  header .who { color: var(--muted); font-size: 13px; }
+  header .who { color: var(--muted); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header .sep { color: var(--faint); }
+  header .apps { display: flex; gap: 8px; align-items: center; }
+  #appSel { width: auto; min-width: 200px; padding: 8px 10px; }
+  #newApp, #logout { padding: 8px 12px; font-size: 13px; white-space: nowrap; }
   main { max-width: 1180px; margin: 0 auto; padding: 28px; display: grid; gap: 28px; grid-template-columns: 340px 1fr; }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
   .card { background: var(--s1); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
@@ -70,6 +75,46 @@
   .modal .card { width: min(420px, 92vw); }
   .modal .row { display: flex; gap: 10px; margin-top: 16px; }
   .modal .row button { flex: 1; }
+  .touch-only { display: none; }
+
+  /* ---- Phones ---- */
+  @media (hover: none) {
+    .touch-only { display: inline; } .mouse-only { display: none; }
+    .drop:hover { border-color: var(--line); color: var(--muted); background: none; }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 15px; }
+    header { flex-wrap: wrap; gap: 10px; padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); }
+    header .sep { display: none; }
+    header .apps { order: 10; flex-basis: 100%; }
+    #appSel { flex: 1; min-width: 0; }
+    header .who { font-size: 12px; }
+    main { padding: 16px; gap: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    aside #add { margin-top: 16px !important; }
+    .card { padding: 16px; border-radius: 16px; }
+    /* 16px stops iOS Safari zooming into a field on focus. */
+    input[type=text], input[type=email], input[type=password], select { font-size: 16px; }
+    button { min-height: 44px; }
+    .drop { padding: 26px 16px; }
+    .drop .pv img { width: 48px; height: 86px; }
+    .toolbar { gap: 8px; }
+    .toolbar #q { flex-basis: 100%; }
+    .toolbar select { min-width: 0; flex-basis: calc(50% - 4px); }
+    .count { order: 5; margin-left: 0; }
+    .toolbar #refresh { order: 6; margin-left: auto; }
+    .bulk span { flex-basis: 100%; }
+    .bulk input { flex: 1; width: auto; min-width: 0; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .tile .meta { padding: 8px 8px 6px; }
+    .tile .acts { padding: 0 8px 8px; gap: 4px; flex-wrap: wrap; }
+    .tile .acts button { min-height: 36px; padding: 6px 0; }
+    .tile .acts [data-act=del] { flex-basis: 100%; }
+    .tile .edit { padding: 0 8px 8px; }
+    .tile .edit .row button { min-height: 38px; }
+    .empty { padding: 28px 8px; }
+    .modal { align-items: flex-end; }
+    .modal .card { width: 100%; border-radius: 18px 18px 0 0; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  }
 </style>
 </head>
 <body>
@@ -84,9 +129,11 @@
     </g>
   </svg>
   <div class="brand">QUEST<span>BYTE</span><span class="labs">LABS</span></div>
-  <div style="color:var(--faint)">·</div>
-  <select id="appSel" title="Which app you are managing" style="width:auto;min-width:200px;padding:8px 10px"></select>
-  <button class="ghost" id="newApp" style="padding:8px 12px;font-size:13px" disabled>+ New app</button>
+  <div class="sep">·</div>
+  <div class="apps">
+    <select id="appSel" title="Which app you are managing"></select>
+    <button class="ghost" id="newApp" disabled>+ New app</button>
+  </div>
   <div class="spacer"></div>
   <div class="who" id="who"></div>
   <button class="ghost" id="logout" style="display:none">Sign out</button>
@@ -107,7 +154,7 @@
       <h2>Add wallpapers</h2>
       <div class="drop" id="drop">
         <input type="file" id="files" accept="image/*" multiple>
-        <div id="dropText">Drop images here or click to choose<br><small>Portrait, 1080×1920 or larger. Several at once is fine.</small></div>
+        <div id="dropText"><span class="mouse-only">Drop images here or click to choose</span><span class="touch-only">Tap to choose images from your gallery</span><br><small>Portrait, 1080×1920 or larger. Several at once is fine.</small></div>
         <div class="pv" id="pv"></div>
       </div>
       <label>Category</label>
@@ -118,7 +165,7 @@
       <button class="primary" id="upload" disabled>Upload</button>
       <div class="progress" id="prog"><i></i></div>
       <div class="msg" id="addMsg"></div>
-      <p class="hint">Uploads go to the app selected in the header. Each image is resized to at most 4K (2160×3840) WebP plus a 480px thumbnail, both generated in your browser.</p>
+      <p class="hint">Uploads go to the app selected in the header. Each image is resized to at most 4K (2160×3840) WebP (JPEG on iPhone) plus a 480px thumbnail, both generated in your browser.</p>
     </section>
   </aside>
 
@@ -327,7 +374,8 @@ files.onchange = () => setPending([...files.files]);
 function setPending(list) {
   pending = list.filter(f => f.type.startsWith("image/"));
   $("pv").innerHTML = pending.map(f => `<img src="${URL.createObjectURL(f)}" alt="">`).join("");
-  $("dropText").textContent = pending.length ? `${pending.length} image${pending.length > 1 ? "s" : ""} selected` : "Drop images here or click to choose";
+  $("dropText").innerHTML = pending.length ? `${pending.length} image${pending.length > 1 ? "s" : ""} selected`
+    : `<span class="mouse-only">Drop images here or click to choose</span><span class="touch-only">Tap to choose images from your gallery</span>`;
   $("upload").disabled = !pending.length;
 }
 
@@ -344,14 +392,14 @@ $("upload").onclick = async () => {
       const base = `${Date.now()}-${slug(stem)}`;
 
       msg("addMsg", `Preparing ${title}…`);
-      const bitmap = await createImageBitmap(f, { imageOrientation: "from-image" });
-      const [fullBlob, thumbBlob] = await Promise.all([
-        encode(bitmap, FULL_MAX.w, FULL_MAX.h, "image/webp", FULL_QUALITY),
-        encode(bitmap, THUMB_WIDTH, Infinity, "image/jpeg", THUMB_QUALITY),
-      ]);
-      bitmap.close();
+      const bitmap = await decode(f);
+      // One at a time: two 4K canvases at once can run a phone out of memory.
+      const fullBlob = await encode(bitmap, FULL_MAX.w, FULL_MAX.h, "image/webp", FULL_QUALITY);
+      const thumbBlob = await encode(bitmap, THUMB_WIDTH, Infinity, "image/jpeg", THUMB_QUALITY);
+      bitmap.close?.();
       msg("addMsg", `Uploading ${title} (${(fullBlob.size / 1024 / 1024).toFixed(1)} MB)…`);
-      const full = await put(`${currentApp}/full/${base}.webp`, fullBlob, "image/webp");
+      const ext = fullBlob.type === "image/webp" ? "webp" : "jpg";
+      const full = await put(`${currentApp}/full/${base}.${ext}`, fullBlob, fullBlob.type);
       const thumb = await put(`${currentApp}/thumbs/${base}.jpg`, thumbBlob, "image/jpeg");
 
       const { error } = await sb.from("wallpapers").insert({ title, category, image_url: full, thumb_url: thumb, app_id: currentApp });
@@ -401,13 +449,24 @@ async function removeFiles(urls) {
   if (supa.length) { const { error } = await sb.storage.from(BUCKET).remove(supa); if (error) throw error; }
 }
 
+// Older mobile browsers reject the options argument; they apply EXIF orientation anyway.
+async function decode(file) {
+  try { return await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { return await createImageBitmap(file); }
+}
+
 // Fit the bitmap inside maxW×maxH (never upscale) and encode it in the browser.
-function encode(bitmap, maxW, maxH, type, quality) {
+// Browsers that can't encode WebP (Safari on iPhone) silently return a PNG; use JPEG then.
+async function encode(bitmap, maxW, maxH, type, quality) {
   const scale = Math.min(1, maxW / bitmap.width, maxH / bitmap.height);
   const c = document.createElement("canvas");
   c.width = Math.round(bitmap.width * scale); c.height = Math.round(bitmap.height * scale);
   c.getContext("2d").drawImage(bitmap, 0, 0, c.width, c.height);
-  return new Promise((resolve, reject) => c.toBlob(b => b ? resolve(b) : reject(new Error("Encoding failed")), type, quality));
+  const toBlob = (t) => new Promise((resolve, reject) => c.toBlob(b => b ? resolve(b) : reject(new Error("Encoding failed")), t, quality));
+  let blob = await toBlob(type);
+  if (blob.type !== type) blob = await toBlob("image/jpeg");
+  c.width = c.height = 0;   // free the canvas memory now rather than at GC time
+  return blob;
 }
 
 // ---- Helpers ----
