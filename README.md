@@ -6,7 +6,7 @@ Deployed with GitHub Pages; writes require signing in as the admin account
 
 This repo is the only copy of the console (the wallpaper app repos no longer carry an `admin/`
 folder). Edit `index.html` here and push to redeploy; the Supabase policies it relies on are in
-each app repo under `supabase/admin.sql` and `supabase/multi-app.sql`.
+each app repo under `supabase/admin.sql`, `supabase/multi-app.sql` and `supabase/ordering.sql` (pins and category covers).
 
 Image files are stored in Cloudflare R2 (free egress); uploads go through the small Worker in
 [`worker/`](worker/). Setup steps, capacity and how compression works: [`worker/README.md`](worker/README.md).

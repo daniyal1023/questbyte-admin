@@ -58,7 +58,15 @@
   .tile .c { color: var(--muted); font-size: 12px; }
   .tile .acts { display: flex; gap: 6px; padding: 0 10px 10px; }
   .tile .acts button { flex: 1; padding: 7px 0; font-size: 12px; }
-  .badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.6); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 999px; }
+  .badges { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none; }
+  .badge { background: rgba(0,0,0,.6); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 999px; }
+  .badge.pin { background: rgba(124,92,255,.85); color: #fff; }
+  .badge.cover { background: rgba(34,211,238,.85); color: #0B0F1A; font-weight: 600; }
+  .tile .acts2 { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; }
+  .tile .acts2 button { flex: 1; padding: 7px 0; font-size: 12px; }
+  .tile .acts2 [data-act=cover] { flex-basis: 100%; }
+  .tile .acts2 .on { border-color: var(--violet); color: var(--text); }
+  .tile.editing .acts2 { display: none; }
   .empty { color: var(--faint); padding: 40px; text-align: center; grid-column: 1/-1; }
   .progress { height: 4px; background: var(--s2); border-radius: 2px; overflow: hidden; margin-top: 14px; display: none; }
   .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .2s; }
@@ -113,7 +121,10 @@
     .tile .acts { padding: 0 6px 6px; gap: 4px; flex-wrap: wrap; }
     .tile .acts button { min-height: 32px; padding: 4px 0; font-size: 11px; border-radius: 8px; }
     .tile .acts [data-act=del] { flex-basis: 100%; }
-    .badge { top: 6px; left: 6px; font-size: 10px; padding: 2px 6px; }
+    .badges { top: 6px; left: 6px; }
+    .badge { font-size: 10px; padding: 2px 6px; }
+    .tile .acts2 { padding: 0 6px 6px; gap: 4px; }
+    .tile .acts2 button { min-height: 32px; padding: 4px 0; font-size: 11px; border-radius: 8px; }
     /* Editing needs room: the tile being edited spans the whole row. */
     .tile.editing { grid-column: 1 / -1; display: grid; grid-template-columns: 34% 1fr; }
     .tile .edit { padding: 8px; justify-content: center; }
@@ -181,6 +192,7 @@
       <input type="text" id="q" placeholder="Search title…">
       <select id="filterCat"><option value="">All categories</option></select>
       <select id="filterActive"><option value="">Active & hidden</option><option value="1">Active only</option><option value="0">Hidden only</option></select>
+      <select id="filterFlag"><option value="">Pinned & not</option><option value="pinned">Pinned only</option><option value="cover">Category covers</option></select>
       <span class="count" id="count"></span>
       <button class="ghost" id="refresh">Refresh</button>
     </div>
@@ -189,6 +201,7 @@
       <input type="text" id="bulkCat" list="cats" placeholder="e.g. Nature">
       <button class="ghost" id="bulkApply" disabled>Apply to shown</button>
     </div>
+    <p class="hint" style="margin:-6px 0 14px">This list is in app order. <b>Pin</b> puts a wallpaper at the top of the app (Home and its category page); ▲ ▼ reorder the pinned ones. <b>Set as cover</b> picks the image on its category's tile. Apps pick changes up on their next refresh.</p>
     <div class="grid" id="grid"><div class="empty">Loading…</div></div>
   </section>
 </main>
@@ -279,8 +292,13 @@ $("logout").onclick = async () => { await sb.auth.signOut(); refreshSession(); }
 // ---- List ----
 async function load() {
   if (!currentApp) { $("grid").innerHTML = `<div class="empty">Create an app first.</div>`; return; }
-  const { data, error } = await sb.from("wallpapers").select("*").eq("app_id", currentApp).order("created_at", { ascending: false });
-  if (error) { $("grid").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+  // Same order as the apps request (data/remote/SupabaseApi.kt): pinned first, then newest.
+  const { data, error } = await sb.from("wallpapers").select("*").eq("app_id", currentApp)
+    .order("pinned_rank", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false });
+  if (error) {
+    const fix = /pinned_rank|is_cover/.test(error.message) ? " — run supabase/ordering.sql (from an app repo) in Supabase Studio" : "";
+    $("grid").innerHTML = `<div class="empty">${esc(error.message + fix)}</div>`; return;
+  }
   rows = data;
   const cats = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();
   $("cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
@@ -288,23 +306,42 @@ async function load() {
   $("filterCat").innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option ${c === sel ? "selected" : ""}>${esc(c)}</option>`).join("");
   render();
 }
-function render() {
-  const q = $("q").value.trim().toLowerCase(), cat = $("filterCat").value, act = $("filterActive").value;
-  const list = rows.filter(r =>
+const isPinned = (r) => r.pinned_rank !== null && r.pinned_rank !== undefined;
+// The search/filter controls, shared by the grid and the bulk category action.
+function shownRows() {
+  const q = $("q").value.trim().toLowerCase(), cat = $("filterCat").value, act = $("filterActive").value, flag = $("filterFlag").value;
+  return rows.filter(r =>
     (!q || (r.title || "").toLowerCase().includes(q)) &&
     (!cat || r.category === cat) &&
-    (act === "" || String(r.is_active ? 1 : 0) === act));
+    (act === "" || String(r.is_active ? 1 : 0) === act) &&
+    (flag === "" || (flag === "pinned" ? isPinned(r) : r.is_cover)));
+}
+function render() {
+  const list = shownRows(), pinned = rows.filter(isPinned);
+  const dis = session ? "" : "disabled";
   $("count").textContent = `${list.length} of ${rows.length}`;
   if (!list.length) { $("grid").innerHTML = `<div class="empty">No wallpapers${rows.length ? " match" : " yet — add one on the left"}.</div>`; return; }
-  $("grid").innerHTML = list.map(r => `
+  $("grid").innerHTML = list.map(r => {
+    const pos = pinned.indexOf(r);
+    return `
     <div class="tile ${r.is_active ? "" : "inactive"}" data-id="${r.id}">
-      ${r.is_active ? "" : `<span class="badge">Hidden</span>`}
+      <div class="badges">
+        ${pos >= 0 ? `<span class="badge pin">Pinned #${pos + 1}</span>` : ""}
+        ${r.is_cover ? `<span class="badge cover">Cover</span>` : ""}
+        ${r.is_active ? "" : `<span class="badge">Hidden</span>`}
+      </div>
       <a href="${esc(r.image_url)}" target="_blank" rel="noopener"><img src="${esc(r.thumb_url)}" loading="lazy" alt=""></a>
       <div class="meta"><div class="t">${esc(r.title || "Untitled")}</div><div class="c">${esc(r.category || "—")}</div></div>
       <div class="acts">
-        <button class="ghost" data-act="edit" ${session ? "" : "disabled"}>Edit</button>
-        <button class="ghost" data-act="toggle" ${session ? "" : "disabled"}>${r.is_active ? "Hide" : "Show"}</button>
-        <button class="danger" data-act="del" ${session ? "" : "disabled"}>Delete</button>
+        <button class="ghost" data-act="edit" ${dis}>Edit</button>
+        <button class="ghost" data-act="toggle" ${dis}>${r.is_active ? "Hide" : "Show"}</button>
+        <button class="danger" data-act="del" ${dis}>Delete</button>
+      </div>
+      <div class="acts2">
+        <button class="ghost ${pos >= 0 ? "on" : ""}" data-act="pin" ${dis} title="${pos >= 0 ? "Remove from the top of the app" : "Show first in the app (Home and its category)"}">${pos >= 0 ? "Unpin" : "Pin"}</button>
+        ${pos >= 0 ? `<button class="ghost" data-act="up" ${dis || (pos === 0 ? "disabled" : "")} title="Move up">▲</button>
+        <button class="ghost" data-act="down" ${dis || (pos === pinned.length - 1 ? "disabled" : "")} title="Move down">▼</button>` : ""}
+        <button class="ghost ${r.is_cover ? "on" : ""}" data-act="cover" ${dis || (r.category ? "" : "disabled")} title="${r.category ? `Image on the ${esc(r.category)} tile` : "Give it a category first"}">${r.is_cover ? "Cover ✓" : "Set as cover"}</button>
       </div>
       <div class="edit">
         <input type="text" data-f="title" value="${esc(r.title || "")}" placeholder="Title">
@@ -312,25 +349,23 @@ function render() {
         <select data-f="app_id">${apps.map(a => `<option value="${esc(a.id)}" ${a.id === r.app_id ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>
         <div class="row"><button class="ghost" data-act="cancel">Cancel</button><button class="primary" style="margin:0" data-act="save">Save</button></div>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
-["q", "filterCat", "filterActive"].forEach(id => $(id).addEventListener("input", render));
+["q", "filterCat", "filterActive", "filterFlag"].forEach(id => $(id).addEventListener("input", render));
 $("grid").addEventListener("keydown", (e) => {
   const tile = e.target.closest(".tile.editing"); if (!tile) return;
   if (e.key === "Enter") tile.querySelector("[data-act=save]").click();
   if (e.key === "Escape") tile.querySelector("[data-act=cancel]").click();
 });
 // Bulk category: applies to whatever the current search/filters show.
-function shownRows() {
-  const q = $("q").value.trim().toLowerCase(), cat = $("filterCat").value, act = $("filterActive").value;
-  return rows.filter(r => (!q || (r.title || "").toLowerCase().includes(q)) && (!cat || r.category === cat) && (act === "" || String(r.is_active ? 1 : 0) === act));
-}
 $("bulkCat").addEventListener("input", () => { $("bulkApply").disabled = !session || !$("bulkCat").value.trim(); });
 $("bulkApply").onclick = async () => {
-  const category = $("bulkCat").value.trim(), ids = shownRows().map(r => r.id);
+  const category = $("bulkCat").value.trim(), ids = shownRows().filter(r => r.category !== category).map(r => r.id);
   if (!category || !ids.length) return;
   if (!confirm(`Set category "${category}" on ${ids.length} wallpaper${ids.length > 1 ? "s" : ""}?`)) return;
-  const { error } = await sb.from("wallpapers").update({ category }).in("id", ids);
+  // A cover belongs to its old category, so moving it drops the cover flag.
+  const { error } = await sb.from("wallpapers").update({ category, is_cover: false }).in("id", ids);
   if (error) alert(error.message); else { $("bulkCat").value = ""; $("bulkApply").disabled = true; load(); }
 };
 $("refresh").onclick = load;
@@ -345,7 +380,11 @@ $("grid").addEventListener("click", async (e) => {
     const title = tile.querySelector("[data-f=title]").value.trim() || null;
     const category = tile.querySelector("[data-f=category]").value.trim() || null;
     const app_id = tile.querySelector("[data-f=app_id]").value;
-    const { error } = await sb.from("wallpapers").update({ title, category, app_id }).eq("id", id);
+    const patch = { title, category, app_id };
+    // A cover belongs to its category, and a pin to its app's list: moving drops them.
+    if (category !== row.category || app_id !== row.app_id) patch.is_cover = false;
+    if (app_id !== row.app_id) patch.pinned_rank = null;
+    const { error } = await sb.from("wallpapers").update(patch).eq("id", id);
     if (error) alert(error.message); else load();
     return;
   }
@@ -354,8 +393,49 @@ $("grid").addEventListener("click", async (e) => {
     if (error) alert(error.message); else load();
   } else if (btn.dataset.act === "del") {
     confirmDelete(row);
+  } else if (["pin", "up", "down"].includes(btn.dataset.act)) {
+    btn.disabled = true;
+    try { await reorderPinned(row, btn.dataset.act); } catch (err) { alert(err.message || err); }
+    load();
+  } else if (btn.dataset.act === "cover") {
+    btn.disabled = true;
+    try { await toggleCover(row); } catch (err) { alert(err.message || err); }
+    load();
   }
 });
+
+// Pinned wallpapers are ranked 1..n (lowest first). Every change rewrites the ranks that moved,
+// so the list stays gapless; there are only ever a handful of pins.
+async function reorderPinned(row, act) {
+  const order = rows.filter(isPinned).map(r => r.id);
+  const i = order.indexOf(row.id);
+  if (act === "pin" && i >= 0) {
+    order.splice(i, 1);
+    const { error } = await sb.from("wallpapers").update({ pinned_rank: null }).eq("id", row.id);
+    if (error) throw error;
+  } else if (act === "pin") order.unshift(row.id);
+  else if (act === "up" && i > 0) [order[i - 1], order[i]] = [order[i], order[i - 1]];
+  else if (act === "down" && i >= 0 && i < order.length - 1) [order[i + 1], order[i]] = [order[i], order[i + 1]];
+  for (const [k, id] of order.entries()) {
+    if (rows.find(r => r.id === id).pinned_rank === k + 1) continue;
+    const { error } = await sb.from("wallpapers").update({ pinned_rank: k + 1 }).eq("id", id);
+    if (error) throw error;
+  }
+}
+
+// One cover per app + category (enforced by a unique index): clear the old one, then set this one.
+async function toggleCover(row) {
+  if (row.is_cover) {
+    const { error } = await sb.from("wallpapers").update({ is_cover: false }).eq("id", row.id);
+    if (error) throw error;
+    return;
+  }
+  const { error: clearErr } = await sb.from("wallpapers").update({ is_cover: false })
+    .eq("app_id", row.app_id).eq("category", row.category).eq("is_cover", true);
+  if (clearErr) throw clearErr;
+  const { error } = await sb.from("wallpapers").update({ is_cover: true }).eq("id", row.id);
+  if (error) throw error;
+}
 
 function confirmDelete(row) {
   $("confirmText").innerHTML = `Delete <b>${esc(row.title || "Untitled")}</b>? This removes the row and its files from storage. Tip: use <i>Hide</i> if you might want it back.`;
