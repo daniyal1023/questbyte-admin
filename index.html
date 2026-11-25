@@ -7,131 +7,237 @@
 <title>Questbyte Labs · Wallpaper Console</title>
 <style>
   :root {
-    --bg: #0B0F1A; --s1: #121826; --s2: #1A2233; --line: #263044;
+    --bg: #0B0F1A; --s1: #121826; --s2: #1A2233; --s3: #222B3F; --line: #263044; --line2: #34405A;
     --text: #F4F4F7; --muted: #9AA3B5; --faint: #5B6577;
-    --violet: #7C5CFF; --cyan: #22D3EE; --danger: #FF5370; --ok: #3DDC97;
+    --violet: #7C5CFF; --cyan: #22D3EE; --danger: #FF5370; --ok: #3DDC97; --warn: #FFB547;
+    --shadow: 0 18px 48px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
   }
   * { box-sizing: border-box; }
+  html { color-scheme: dark; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
   a { color: var(--cyan); }
-  header { display: flex; align-items: center; gap: 12px; padding: 18px 28px; border-bottom: 1px solid var(--line); }
-  header .brand { font-weight: 800; letter-spacing: .3px; }
+  [hidden] { display: none !important; }
+
+  /* ---- Header ---- */
+  header { display: flex; align-items: center; gap: 14px; padding: 14px 28px; border-bottom: 1px solid var(--line); }
+  header .brand { font-weight: 800; letter-spacing: .3px; white-space: nowrap; }
   header .brand span { background: linear-gradient(135deg, var(--violet), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   header .labs { color: var(--faint); letter-spacing: 3px; font-size: 11px; margin-left: 6px; }
   header .spacer { flex: 1; }
   header .who { color: var(--muted); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  header .sep { color: var(--faint); }
-  header .apps { display: flex; gap: 8px; align-items: center; }
-  #appSel { width: auto; min-width: 200px; padding: 8px 10px; }
-  #newApp, #logout { padding: 8px 12px; font-size: 13px; white-space: nowrap; }
-  main { max-width: 1180px; margin: 0 auto; padding: 28px; display: grid; gap: 28px; grid-template-columns: 340px 1fr; }
-  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  #logout { padding: 8px 12px; font-size: 13px; white-space: nowrap; }
+
+  /* App switcher button */
+  .appbtn { display: flex; align-items: center; gap: 10px; min-width: 300px; max-width: 420px; padding: 6px 12px 6px 6px;
+    background: var(--s2); border: 1px solid var(--line); border-radius: 12px; color: var(--text); text-align: left; font-weight: 400; }
+  .appbtn:hover, .appbtn[aria-expanded=true] { border-color: var(--line2); background: var(--s3); }
+  .appbtn .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .appbtn b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .appbtn small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .appbtn kbd { color: var(--faint); font: 11px/1 inherit; border: 1px solid var(--line2); border-radius: 5px; padding: 3px 5px; }
+  .av { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, hsl(var(--h) 70% 52%), hsl(calc(var(--h) + 40) 70% 38%)); letter-spacing: .3px; }
+  .av.sm { width: 28px; height: 28px; border-radius: 8px; font-size: 11px; }
+
+  /* ---- Layout ---- */
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 28px 40px; display: grid; gap: 24px; grid-template-columns: 340px minmax(0, 1fr); align-items: start; }
+  /* Sticky, but scrolls on its own when it is taller than the window (short laptop screens). */
+  aside { position: sticky; top: 16px; display: grid; gap: 20px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: none; border-radius: 18px; }
+  aside::-webkit-scrollbar { display: none; }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } aside { position: static; max-height: none; overflow: visible; } }
   .card { background: var(--s1); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
-  h2 { margin: 0 0 14px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
-  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
-  input[type=text], input[type=email], input[type=password], select {
-    width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
-    background: var(--s2); color: var(--text); font: inherit; outline: none;
+  h2 { margin: 0 0 14px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
+  label .note { color: var(--faint); }
+  input[type=text], input[type=email], input[type=password], input[type=search], select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--s2); color: var(--text); font: inherit; outline: none; transition: border-color .12s, box-shadow .12s;
   }
-  input:focus, select:focus { border-color: var(--violet); }
-  .drop { margin-top: 12px; border: 1.5px dashed var(--line); border-radius: 14px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; transition: .15s; }
-  .drop.over, .drop:hover { border-color: var(--cyan); color: var(--text); background: rgba(34,211,238,.05); }
-  .drop input { display: none; }
-  .drop .pv { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
-  .drop .pv img { width: 56px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
-  button { font: inherit; border: 0; border-radius: 10px; padding: 11px 16px; cursor: pointer; font-weight: 600; }
-  button:disabled { opacity: .5; cursor: default; }
+  input:focus, select:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,255,.18); }
+  input::placeholder { color: var(--faint); }
+  button { font: inherit; border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer; font-weight: 600; color: var(--text); }
+  button:disabled { opacity: .45; cursor: default; }
   .primary { width: 100%; margin-top: 16px; color: #fff; background: linear-gradient(135deg, var(--violet), var(--cyan)); }
   .ghost { background: var(--s2); color: var(--text); border: 1px solid var(--line); }
+  .ghost:not(:disabled):hover { border-color: var(--line2); background: var(--s3); }
   .danger { background: rgba(255,83,112,.12); color: var(--danger); }
+  .danger:not(:disabled):hover { background: rgba(255,83,112,.2); }
+  .link { background: none; padding: 0; color: var(--cyan); font-weight: 600; }
   .msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
   .msg.err { color: var(--danger); } .msg.ok { color: var(--ok); }
-  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-  .toolbar input, .toolbar select { width: auto; flex: 1; min-width: 160px; }
-  .count { color: var(--muted); font-size: 13px; margin-left: auto; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-  .tile { background: var(--s2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; position: relative; }
-  .tile.inactive img { filter: grayscale(1) brightness(.5); }
-  .tile img { width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block; background: #000; }
-  .tile .meta { padding: 10px 10px 8px; }
-  .tile .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tile .c { color: var(--muted); font-size: 12px; }
-  .tile .acts { display: flex; gap: 6px; padding: 0 10px 10px; }
-  .tile .acts button { flex: 1; padding: 7px 0; font-size: 12px; }
-  .badges { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none; }
-  .badge { background: rgba(0,0,0,.6); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 999px; }
-  .badge.pin { background: rgba(124,92,255,.85); color: #fff; }
-  .badge.cover { background: rgba(34,211,238,.85); color: #0B0F1A; font-weight: 600; }
-  .tile .acts2 { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; }
-  .tile .acts2 button { flex: 1; padding: 7px 0; font-size: 12px; }
-  .tile .acts2 [data-act=cover] { flex-basis: 100%; }
-  .tile .acts2 .on { border-color: var(--violet); color: var(--text); }
-  .tile.editing .acts2 { display: none; }
-  .empty { color: var(--faint); padding: 40px; text-align: center; grid-column: 1/-1; }
+  .hint { font-size: 12px; color: var(--faint); margin: 10px 0 0; }
+  .locked { opacity: .45; pointer-events: none; }
+
+  /* ---- Combobox (category / app fields) ---- */
+  .combo { position: relative; }
+  .combo input { padding-right: 38px; }
+  .combo .chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; padding: 0; display: grid; place-items: center;
+    background: none; color: var(--muted); border-radius: 8px; }
+  .combo .chev:hover { background: var(--s3); color: var(--text); }
+  .combo .chev svg { transition: transform .15s; }
+  .combo.open .chev svg { transform: rotate(180deg); }
+  .combo.open input { border-color: var(--violet); }
+
+  /* Shared floating menu: one instance, positioned under whichever field opened it. */
+  .menu { position: fixed; z-index: 200; display: flex; flex-direction: column; background: #151C2B; border: 1px solid var(--line2);
+    border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; animation: pop .12s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px); } }
+  .menu-head { padding: 10px; border-bottom: 1px solid var(--line); }
+  .menu-head .search { position: relative; }
+  .menu-head .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+  .menu-head input { padding-left: 34px; }
+  .menu-list { overflow-y: auto; padding: 6px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+  .menu-foot { border-top: 1px solid var(--line); padding: 8px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  .menu-foot small { color: var(--faint); font-size: 11px; padding-left: 4px; }
+  .menu-foot button { padding: 7px 12px; font-size: 13px; }
+  .menu-sec { padding: 8px 10px 4px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .menu-note { margin: 4px; padding: 8px 10px; border-radius: 9px; background: rgba(255,181,71,.1); color: var(--warn); font-size: 12px; }
+  .menu-empty { padding: 18px 12px; color: var(--faint); text-align: center; font-size: 13px; }
+  .opt { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; cursor: pointer; min-height: 38px; }
+  .opt.active { background: var(--s3); }
+  .opt .nm { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+  .opt .nm > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opt .nm small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opt mark { background: none; color: var(--cyan); font-weight: 700; }
+  .opt .n { color: var(--muted); font-size: 12px; background: var(--s2); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+  .opt .ck { color: var(--violet); flex: none; }
+  .opt.create .plus { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: rgba(124,92,255,.2); color: var(--violet); font-weight: 700; }
+  .opt.create .nm { color: var(--text); }
+
+  /* ---- Upload ---- */
+  .drop { border: 1.5px dashed var(--line2); border-radius: 14px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; transition: .15s; }
+  .drop.over, .drop:hover { border-color: var(--cyan); color: var(--text); background: rgba(34,211,238,.05); }
+  .drop input { display: none; }
+  .drop small { color: var(--faint); }
+  .pv { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  .pv:empty { display: none; }
+  .pv .th { position: relative; }
+  .pv img { width: 56px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .pv .x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; padding: 0; border-radius: 50%; background: #000; border: 1px solid var(--line2);
+    color: var(--text); font-size: 12px; line-height: 1; display: grid; place-items: center; }
   .progress { height: 4px; background: var(--s2); border-radius: 2px; overflow: hidden; margin-top: 14px; display: none; }
   .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .2s; }
-  .locked { opacity: .45; pointer-events: none; }
-  .hint { font-size: 12px; color: var(--faint); margin-top: 10px; }
-  .tile .edit { display: none; padding: 0 10px 10px; gap: 6px; flex-direction: column; }
-  .tile.editing .edit { display: flex; } .tile.editing .meta, .tile.editing .acts { display: none; }
-  .tile .edit input, .tile .edit select { padding: 8px 10px; font-size: 13px; }
-  .tile .edit .row { display: flex; gap: 6px; } .tile .edit .row button { flex: 1; padding: 7px 0; font-size: 12px; }
-  .bulk { display: flex; gap: 8px; align-items: center; margin: -6px 0 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
-  .bulk input { width: 180px; padding: 8px 10px; }
-  .bulk button { padding: 8px 12px; font-size: 13px; }
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; }
-  .modal .card { width: min(420px, 92vw); }
-  .modal .row { display: flex; gap: 10px; margin-top: 16px; }
-  .modal .row button { flex: 1; }
-  .touch-only { display: none; }
 
-  /* ---- Phones ---- */
+  /* ---- Library ---- */
+  .lib { padding: 0; overflow: clip; }
+  .lib-top { position: sticky; top: 0; z-index: 5; background: rgba(18,24,38,.96); backdrop-filter: blur(8px); padding: 18px 22px 12px; border-bottom: 1px solid var(--line); border-radius: 18px 18px 0 0; }
+  .lib-body { padding: 16px 22px 22px; }
+  .row1 { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row1 .search { position: relative; flex: 1; min-width: 200px; }
+  .row1 .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+  .row1 .search input { padding-left: 36px; }
+  .seg { display: inline-flex; background: var(--s2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button { padding: 6px 11px; font-size: 13px; font-weight: 500; background: none; color: var(--muted); border-radius: 7px; white-space: nowrap; }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: var(--s3); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .icon-btn { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; }
+  .stats { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 12px; }
+  .stats b { color: var(--text); font-weight: 600; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; margin-top: 12px; padding-bottom: 4px; scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+  .chip { flex: none; display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; background: var(--s2); border: 1px solid var(--line);
+    color: var(--muted); font-weight: 500; font-size: 13px; }
+  .chip:hover { color: var(--text); border-color: var(--line2); }
+  .chip .n { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .chip.on { background: rgba(124,92,255,.18); border-color: var(--violet); color: var(--text); }
+  .chip.on .n { color: #C7B8FF; }
+  .chip.dup { border-style: dashed; border-color: rgba(255,181,71,.6); }
+  .chip.dup::after { content: "!"; font-size: 11px; font-weight: 800; color: var(--warn); }
+  .catbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .catbar b { color: var(--text); font-size: 14px; }
+  .catbar .sp { flex: 1; }
+  .catbar button { padding: 6px 12px; font-size: 13px; }
+  .catbar .warn { color: var(--warn); flex-basis: 100%; }
+  .tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
+  .tools .combo { width: 220px; }
+  .tools input { padding: 8px 10px; }
+  .tools button { padding: 8px 12px; font-size: 13px; }
+  .tools .sp { flex: 1; }
+  details.help { font-size: 12px; color: var(--faint); }
+  details.help summary { cursor: pointer; list-style: none; color: var(--muted); }
+  details.help summary::-webkit-details-marker { display: none; }
+  details.help[open] { flex-basis: 100%; order: 10; }
+  details.help p { margin: 6px 0 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 14px; }
+  .tile { background: var(--s2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; position: relative; transition: border-color .12s; scroll-margin-top: 220px; }
+  .tile:hover { border-color: var(--line2); }
+  .tile.inactive img { filter: grayscale(1) brightness(.5); }
+  .tile img { width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block; background: #000; }
+  .tile .meta { padding: 9px 10px 8px; }
+  .tile .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .c { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .c button { background: none; padding: 0; color: inherit; font: inherit; font-weight: 400; }
+  .tile .c button:hover { color: var(--cyan); }
+  .tile .acts, .tile .acts2 { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; }
+  .tile .acts button, .tile .acts2 button { flex: 1; padding: 7px 0; font-size: 12px; border-radius: 8px; }
+  .tile .acts2 [data-act=cover] { flex-basis: 100%; }
+  .tile .acts2 .on { border-color: var(--violet); color: var(--text); background: rgba(124,92,255,.12); }
+  .badges { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none; }
+  .badge { background: rgba(0,0,0,.65); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 999px; backdrop-filter: blur(4px); }
+  .badge.pin { background: rgba(124,92,255,.9); color: #fff; }
+  .badge.cover { background: rgba(34,211,238,.9); color: #0B0F1A; font-weight: 600; }
+  .tile .edit { display: none; padding: 10px; gap: 6px; flex-direction: column; }
+  .tile .edit label { margin: 2px 0 0; font-size: 11px; }
+  .tile.editing { border-color: var(--violet); }
+  .tile.editing .edit { display: flex; } .tile.editing .meta, .tile.editing .acts, .tile.editing .acts2 { display: none; }
+  .tile .edit input { padding: 7px 9px; font-size: 13px; }
+  .tile .edit .combo input { padding-right: 32px; }
+  .tile .edit .combo .chev { width: 26px; height: 26px; }
+  .tile .edit .row { display: flex; gap: 6px; margin-top: 4px; } .tile .edit .row button { flex: 1; padding: 7px 0; font-size: 12px; margin: 0; }
+  .empty { color: var(--faint); padding: 48px 20px; text-align: center; grid-column: 1/-1; }
+
+  .modal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; }
+  .modal .card { width: min(440px, 92vw); box-shadow: var(--shadow); }
+  .modal .row { display: flex; gap: 10px; margin-top: 18px; }
+  .modal .row button { flex: 1; margin: 0; }
+  .modal p { color: var(--muted); margin: 0; }
+
+  .toasts { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast { background: #1E2738; border: 1px solid var(--line2); color: var(--text); padding: 10px 16px; border-radius: 12px; box-shadow: var(--shadow); font-size: 13px; animation: pop .15s ease-out; max-width: 90vw; }
+  .toast.err { border-color: rgba(255,83,112,.6); color: #FFB3C0; }
+  .toast.ok::before { content: "✓  "; color: var(--ok); font-weight: 700; }
+
+  .touch-only { display: none; }
   @media (hover: none) {
     .touch-only { display: inline; } .mouse-only { display: none; }
-    .drop:hover { border-color: var(--line); color: var(--muted); background: none; }
+    .drop:hover { border-color: var(--line2); color: var(--muted); background: none; }
+    .appbtn kbd { display: none; }
   }
+
+  /* ---- Phones ---- */
   @media (max-width: 640px) {
     body { font-size: 15px; }
     header { flex-wrap: wrap; gap: 10px; padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); }
-    header .sep { display: none; }
-    header .apps { order: 10; flex-basis: 100%; min-width: 0; }
-    /* width: 0 + flex: 1 — otherwise the longest app name sets the width and the page overflows. */
-    #appSel { flex: 1; width: 0; min-width: 0; }
+    .appbtn { order: 10; flex-basis: 100%; min-width: 0; max-width: none; }
     header .who { font-size: 12px; }
     main { padding: 16px; gap: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
-    aside #add { margin-top: 16px !important; }
     .card { padding: 16px; border-radius: 16px; }
+    .lib { padding: 0; }
+    .lib-top { padding: 14px 14px 10px; border-radius: 16px 16px 0 0; }
+    .lib-body { padding: 12px 10px 14px; }
     /* 16px stops iOS Safari zooming into a field on focus. */
-    input[type=text], input[type=email], input[type=password], select { font-size: 16px; }
-    button { min-height: 44px; }
-    .drop { padding: 26px 16px; }
-    .drop .pv img { width: 48px; height: 86px; }
-    .toolbar { gap: 8px; }
-    .toolbar #q { flex-basis: 100%; }
-    .toolbar select { min-width: 0; flex-basis: calc(50% - 4px); }
-    .count { order: 5; margin-left: 0; }
-    .toolbar #refresh { order: 6; margin-left: auto; }
-    .bulk span { flex-basis: 100%; }
-    .bulk input { flex: 1; width: auto; min-width: 0; }
+    input[type=text], input[type=email], input[type=password], input[type=search], select { font-size: 16px; }
+    button { min-height: 40px; }
+    .seg button, .chip, .combo .chev { min-height: 0; }
+    .row1 .search { flex: 1 1 0; } #refresh { order: 1; } .seg { order: 2; }
+    .seg { flex: 1 1 140px; min-width: 0; } .seg button { flex: 1; padding: 6px 2px; }
+    .tools .combo { flex: 1; width: auto; min-width: 0; }
+    .tools .lbl { flex-basis: 100%; } .tools .sp { display: none; } details.help { flex-basis: 100%; order: 10; }
     .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .tile { border-radius: 10px; }
     .tile .meta { padding: 6px 6px 4px; }
-    .tile .t { font-size: 12px; }
-    .tile .c { font-size: 11px; }
-    .tile .acts { padding: 0 6px 6px; gap: 4px; flex-wrap: wrap; }
-    .tile .acts button { min-height: 32px; padding: 4px 0; font-size: 11px; border-radius: 8px; }
+    .tile .t { font-size: 12px; } .tile .c { font-size: 11px; }
+    .tile .acts, .tile .acts2 { padding: 0 6px 6px; gap: 4px; }
+    .tile .acts button, .tile .acts2 button { min-height: 32px; padding: 4px 0; font-size: 11px; }
     .tile .acts [data-act=del] { flex-basis: 100%; }
-    .badges { top: 6px; left: 6px; }
-    .badge { font-size: 10px; padding: 2px 6px; }
-    .tile .acts2 { padding: 0 6px 6px; gap: 4px; }
-    .tile .acts2 button { min-height: 32px; padding: 4px 0; font-size: 11px; border-radius: 8px; }
+    .badges { top: 6px; left: 6px; } .badge { font-size: 10px; padding: 2px 6px; }
     /* Editing needs room: the tile being edited spans the whole row. */
     .tile.editing { grid-column: 1 / -1; display: grid; grid-template-columns: 34% 1fr; }
     .tile .edit { padding: 8px; justify-content: center; }
     .tile .edit .row button { min-height: 40px; }
-    .empty { padding: 28px 8px; }
     .modal { align-items: flex-end; }
     .modal .card { width: 100%; border-radius: 18px 18px 0 0; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    .opt { min-height: 44px; }
   }
 </style>
 </head>
@@ -147,11 +253,12 @@
     </g>
   </svg>
   <div class="brand">QUEST<span>BYTE</span><span class="labs">LABS</span></div>
-  <div class="sep">·</div>
-  <div class="apps">
-    <select id="appSel" title="Which app you are managing"></select>
-    <button class="ghost" id="newApp" disabled>+ New app</button>
-  </div>
+  <button class="appbtn" id="appBtn" aria-haspopup="listbox" aria-expanded="false" title="Switch app (Ctrl+K)">
+    <span class="av" id="appAv" style="--h:260">··</span>
+    <span class="txt"><b id="appName0">Loading apps…</b><small id="appSub"></small></span>
+    <kbd>Ctrl K</kbd>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
   <div class="spacer"></div>
   <div class="who" id="who"></div>
   <button class="ghost" id="logout" style="display:none">Sign out</button>
@@ -168,61 +275,89 @@
       <p class="hint">Create this account in Supabase → Authentication → Users, and run <code>supabase/admin.sql</code> from the app repo with the same email.</p>
     </section>
 
-    <section class="card locked" id="add" style="margin-top:20px">
+    <section class="card locked" id="add">
       <h2>Add wallpapers</h2>
       <div class="drop" id="drop">
         <input type="file" id="files" accept="image/*" multiple>
-        <div id="dropText"><span class="mouse-only">Drop images here or click to choose</span><span class="touch-only">Tap to choose images from your gallery</span><br><small>Portrait, 1080×1920 or larger. Several at once is fine.</small></div>
+        <div id="dropText"></div>
         <div class="pv" id="pv"></div>
       </div>
-      <label>Category</label>
-      <input type="text" id="category" list="cats" placeholder="e.g. Nature">
-      <datalist id="cats"></datalist>
-      <label>Title <span style="color:var(--faint)">(optional — file name is used if blank; ignored for multiple files)</span></label>
-      <input type="text" id="title" placeholder="e.g. Mountain Dawn">
+      <label for="category">Category</label>
+      <input type="text" id="category" placeholder="Pick or type a new one">
+      <label for="title">Title <span class="note">· optional, single image only</span></label>
+      <input type="text" id="title" placeholder="File name is used if blank">
       <button class="primary" id="upload" disabled>Upload</button>
       <div class="progress" id="prog"><i></i></div>
       <div class="msg" id="addMsg"></div>
-      <p class="hint">Uploads go to the app selected in the header. Each image is resized to at most 4K (2160×3840) WebP (JPEG on iPhone) plus a 480px thumbnail, both generated in your browser.</p>
+      <p class="hint">Uploads go to <b id="upApp" style="color:var(--muted)">the selected app</b>. Each image is resized to at most 4K (2160×3840) WebP (JPEG on iPhone) plus a 480px thumbnail, in your browser.</p>
     </section>
   </aside>
 
-  <section class="card">
-    <div class="toolbar">
-      <input type="text" id="q" placeholder="Search title…">
-      <select id="filterCat"><option value="">All categories</option></select>
-      <select id="filterActive"><option value="">Active & hidden</option><option value="1">Active only</option><option value="0">Hidden only</option></select>
-      <select id="filterFlag"><option value="">Pinned & not</option><option value="pinned">Pinned only</option><option value="cover">Category covers</option></select>
-      <span class="count" id="count"></span>
-      <button class="ghost" id="refresh">Refresh</button>
+  <section class="card lib">
+    <div class="lib-top">
+      <div class="row1">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="q" placeholder="Search title or category…  ( / )">
+        </div>
+        <div class="seg" id="segStatus" role="group" aria-label="Visibility">
+          <button data-v="" class="on">All</button><button data-v="1">Active</button><button data-v="0">Hidden</button>
+        </div>
+        <div class="seg" id="segFlag" role="group" aria-label="Pins and covers">
+          <button data-v="" class="on">Any</button><button data-v="pinned">Pinned</button><button data-v="cover">Covers</button>
+        </div>
+        <button class="ghost icon-btn" id="refresh" title="Refresh">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+        </button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="chips" id="chips" role="tablist" aria-label="Categories"></div>
     </div>
-    <div class="bulk" id="bulk">
-      <span>Set category for everything shown:</span>
-      <input type="text" id="bulkCat" list="cats" placeholder="e.g. Nature">
-      <button class="ghost" id="bulkApply" disabled>Apply to shown</button>
+
+    <div class="lib-body">
+      <div class="catbar" id="catbar" hidden></div>
+      <div class="tools">
+        <span class="lbl">Move everything shown to</span>
+        <input type="text" id="bulkCat" placeholder="Category">
+        <button class="ghost" id="bulkApply" disabled>Apply</button>
+        <span class="sp"></span>
+        <details class="help"><summary>How ordering works ⓘ</summary>
+          <p>The grid is in app order. <b>Pin</b> puts a wallpaper at the top of the app (Home and its category page); ▲ ▼ reorder the pinned ones. <b>Set as cover</b> picks the image on its category's tile. Apps pick changes up on their next refresh.</p>
+        </details>
+      </div>
+      <div class="grid" id="grid"><div class="empty">Loading…</div></div>
     </div>
-    <p class="hint" style="margin:-6px 0 14px">This list is in app order. <b>Pin</b> puts a wallpaper at the top of the app (Home and its category page); ▲ ▼ reorder the pinned ones. <b>Set as cover</b> picks the image on its category's tile. Apps pick changes up on their next refresh.</p>
-    <div class="grid" id="grid"><div class="empty">Loading…</div></div>
   </section>
 </main>
 
 <div class="modal" id="appModal">
   <div class="card">
     <h2>New app</h2>
-    <label>Display name</label><input type="text" id="appName" placeholder="e.g. Anime Wallpapers">
-    <label>App id <span style="color:var(--faint)">(letters/numbers, no spaces — goes into the app build as APP_ID)</span></label>
-    <input type="text" id="appId" placeholder="e.g. anime">
+    <label>Display name</label><input type="text" id="appNameIn" placeholder="e.g. Anime Wallpapers">
+    <label>App id <span class="note">(letters/numbers, no spaces — goes into the app build as APP_ID)</span></label>
+    <input type="text" id="appIdIn" placeholder="e.g. anime">
     <div class="msg" id="appMsg"></div>
-    <div class="row"><button class="ghost" id="cancelApp">Cancel</button><button class="primary" style="margin:0" id="okApp">Create</button></div>
+    <div class="row"><button class="ghost" id="cancelApp">Cancel</button><button class="primary" id="okApp">Create</button></div>
+  </div>
+</div>
+<div class="modal" id="renameModal">
+  <div class="card">
+    <h2>Rename category</h2>
+    <p id="renameText"></p>
+    <label for="renameIn">New name</label>
+    <input type="text" id="renameIn" placeholder="New name, or pick one to merge into">
+    <div class="msg" id="renameMsg"></div>
+    <div class="row"><button class="ghost" id="cancelRename">Cancel</button><button class="primary" id="okRename">Rename</button></div>
   </div>
 </div>
 <div class="modal" id="confirm">
   <div class="card">
     <h2>Delete wallpaper</h2>
-    <div id="confirmText"></div>
+    <p id="confirmText"></p>
     <div class="row"><button class="ghost" id="cancelDel">Cancel</button><button class="danger" id="okDel">Delete</button></div>
   </div>
 </div>
+<div class="toasts" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -240,32 +375,273 @@ const FULL_QUALITY = 0.85, THUMB_QUALITY = 0.82;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (id) => document.getElementById(id);
 let rows = [], session = null, pending = [], apps = [], currentApp = null;
+const view = { q: "", cat: "", status: "", flag: "" };   // the library filters
+const ICON = {
+  chev: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+  check: `<svg class="ck" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+  search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
+};
 
-// ---- Apps (multi-app support: every wallpaper belongs to one app) ----
+// ======================================================================================
+// Floating menu. One shared instance; a field opens it with its own sections and pick handler.
+// ======================================================================================
+const Menu = (() => {
+  const el = document.createElement("div"); el.className = "menu"; el.hidden = true; el.setAttribute("role", "listbox");
+  const head = document.createElement("div"), list = document.createElement("div"), foot = document.createElement("div");
+  head.className = "menu-head"; list.className = "menu-list"; foot.className = "menu-foot";
+  el.append(head, list, foot); document.body.append(el);
+  let cfg = null, items = [], active = -1;
+
+  function open(c) {
+    if (cfg && cfg !== c) close();
+    cfg = c;
+    head.replaceChildren(...(c.header ? [c.header] : [])); head.hidden = !c.header;
+    foot.replaceChildren(...(c.footer ? [c.footer] : [])); foot.hidden = !c.footer;
+    el.hidden = false; c.onOpen?.();
+    refresh(); place();
+  }
+  function close() {
+    if (!cfg) return;
+    el.hidden = true; const c = cfg; cfg = null; c.onClose?.();
+  }
+  function refresh() {
+    if (!cfg) return;
+    items = [];
+    const html = cfg.sections().map(s => {
+      if (s.note) return `<div class="menu-note">${s.note}</div>`;
+      if (!s.items.length) return "";
+      return (s.title ? `<div class="menu-sec">${s.title}</div>` : "") + s.items.map(it => {
+        const i = items.push(it) - 1;
+        return `<div class="opt ${it.cls || ""}" data-i="${i}" role="option">${it.html}</div>`;
+      }).join("");
+    }).join("");
+    list.innerHTML = items.length ? html : html + `<div class="menu-empty">${cfg.empty || "Nothing found"}</div>`;
+    active = items.findIndex(it => it.preselect);
+    if (active < 0 && items.length && cfg.autoFirst?.()) active = 0;
+    highlight();
+  }
+  function highlight(scroll = true) {
+    list.querySelectorAll(".opt").forEach(o => o.classList.toggle("active", +o.dataset.i === active));
+    if (scroll) list.querySelector(".opt.active")?.scrollIntoView({ block: "nearest" });
+  }
+  function move(d) { if (!items.length) return; active = active < 0 ? (d > 0 ? 0 : items.length - 1) : (active + d + items.length) % items.length; highlight(); }
+  function pick(i) { const it = items[i]; if (it && cfg) cfg.onPick(it); }
+  function key(e) {
+    if (!cfg) return false;
+    if (e.key === "ArrowDown") move(1);
+    else if (e.key === "ArrowUp") move(-1);
+    else if (e.key === "Enter") { if (active < 0) { close(); return false; } pick(active); }
+    else if (e.key === "Escape") { const c = cfg; close(); c.onEscape?.(); }
+    else if (e.key === "Tab") { close(); return false; }
+    else return false;
+    e.preventDefault(); e.stopPropagation(); return true;
+  }
+  function place() {
+    if (!cfg) return;
+    const r = cfg.anchor.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    const w = Math.min(Math.max(r.width, cfg.minWidth || 0), vw - 16);
+    el.style.width = w + "px";
+    el.style.left = Math.max(8, Math.min(r.left, vw - w - 8)) + "px";
+    const below = vh - r.bottom - 12, above = r.top - 12, want = cfg.maxHeight || 320;
+    if (below < Math.min(want, 240) && above > below) {
+      el.style.top = ""; el.style.bottom = (vh - r.top + 6) + "px"; el.style.maxHeight = Math.min(want, above) + "px";
+    } else {
+      el.style.bottom = ""; el.style.top = (r.bottom + 6) + "px"; el.style.maxHeight = Math.min(want, below) + "px";
+    }
+  }
+  // Clicking an option must not steal focus from the field that opened the menu.
+  el.addEventListener("mousedown", e => { if (!e.target.closest("input")) e.preventDefault(); });
+  list.addEventListener("click", e => { const o = e.target.closest(".opt"); if (o) pick(+o.dataset.i); });
+  list.addEventListener("mousemove", e => { const o = e.target.closest(".opt"); if (o && +o.dataset.i !== active) { active = +o.dataset.i; highlight(false); } });
+  document.addEventListener("pointerdown", e => { if (cfg && !el.contains(e.target) && !cfg.anchor.contains(e.target)) close(); }, true);
+  window.addEventListener("resize", place);
+  document.addEventListener("scroll", e => { if (cfg && !el.contains(e.target)) place(); }, true);
+  return { open, close, refresh, key, place, el, isOpenFor: (a) => !!cfg && cfg.anchor === a };
+})();
+
+// A text field with a dropdown of choices. `strict` fields only accept a listed value (shown by label);
+// the others accept free text and can offer "Create …".
+function combo(input, cfg) {
+  const wrap = document.createElement("div"); wrap.className = "combo";
+  input.before(wrap); wrap.append(input);
+  const chev = document.createElement("button"); chev.type = "button"; chev.className = "chev"; chev.tabIndex = -1; chev.innerHTML = ICON.chev;
+  chev.setAttribute("aria-label", "Show choices"); wrap.append(chev);
+  input.autocomplete = "off"; input.spellcheck = false; input.setAttribute("role", "combobox");
+  let typed = false;
+  const value = () => cfg.strict ? (input.dataset.value || "") : input.value.trim();
+  const set = (v) => {
+    if (cfg.strict) { input.dataset.value = v; input.value = cfg.items().find(i => i.value === v)?.label ?? v; }
+    else input.value = v;
+  };
+  const sections = () => {
+    const q = typed ? input.value.trim() : "", ql = q.toLowerCase(), all = cfg.items(), cur = value();
+    const hits = all.filter(i => !ql || i.label.toLowerCase().includes(ql) || (i.sub || "").toLowerCase().includes(ql));
+    if (ql) hits.sort((a, b) => a.label.toLowerCase().startsWith(ql) === b.label.toLowerCase().startsWith(ql) ? 0 : a.label.toLowerCase().startsWith(ql) ? -1 : 1);
+    const secs = [];
+    if (cfg.create && q && !all.some(i => i.value === q)) {
+      const twin = all.find(i => i.value.toLowerCase() === ql);
+      if (twin) secs.push({ note: `<b>${esc(twin.value)}</b> already exists with different capitals. Pick it instead of making a second category.` });
+      else secs.push({ items: [{ value: q, cls: "create", html: `<span class="plus">+</span><span class="nm"><span>Create “${esc(q)}”</span><small>New ${cfg.noun || "item"}</small></span>` }] });
+    }
+    secs.push({
+      title: cfg.title ? cfg.title(hits.length, all.length, !!q) : "",
+      items: hits.map(i => ({
+        value: i.value, preselect: !q && i.value === cur,
+        html: `${i.av || ""}<span class="nm"><span>${mark(i.label, q)}</span>${i.sub ? `<small>${mark(i.sub, q)}</small>` : ""}</span>${i.count != null ? `<span class="n">${i.count}</span>` : ""}${i.value === cur ? ICON.check : ""}`,
+      })),
+    });
+    return secs;
+  };
+  const menuCfg = {
+    anchor: wrap, sections, minWidth: cfg.minWidth || 240, maxHeight: cfg.maxHeight || 320,
+    empty: cfg.empty, autoFirst: () => typed && !!input.value.trim(),
+    onOpen: () => wrap.classList.add("open"),
+    onClose: () => { wrap.classList.remove("open"); typed = false; if (cfg.strict) set(value()); },
+    onPick: (it) => { set(it.value); typed = false; Menu.close(); cfg.onPick?.(it.value); },
+  };
+  const open = () => Menu.open(menuCfg);
+  input.addEventListener("focus", () => { typed = false; open(); setTimeout(() => input.select(), 0); });
+  input.addEventListener("click", () => { if (!Menu.isOpenFor(wrap)) open(); });
+  input.addEventListener("input", () => { typed = true; cfg.onInput?.(); Menu.isOpenFor(wrap) ? Menu.refresh() : open(); });
+  input.addEventListener("keydown", (e) => {
+    if (Menu.isOpenFor(wrap)) Menu.key(e);
+    else if (e.key === "ArrowDown") { e.preventDefault(); open(); }
+  });
+  input.addEventListener("blur", () => setTimeout(() => { if (Menu.isOpenFor(wrap) && document.activeElement !== input) Menu.close(); }, 0));
+  chev.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    if (Menu.isOpenFor(wrap)) Menu.close();
+    else if (document.activeElement === input) { typed = false; open(); }
+    else input.focus();
+  });
+  return { value, set, input, wrap };
+}
+
+// ---- Category helpers (per current app) ----
+function categoryStats() {
+  const m = new Map();
+  for (const r of rows) if (r.category) m.set(r.category, (m.get(r.category) || 0) + 1);
+  return [...m].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+}
+const categoryItems = () => categoryStats().map(c => ({ value: c.name, label: c.name, count: c.count }));
+const twinOf = (name) => name && categoryStats().find(c => c.name !== name && c.name.toLowerCase() === name.toLowerCase())?.name;
+// "Neymar" when "neymar" already exists: offer the existing one so we don't split a category.
+function resolveTwin(name, combo) {
+  const twin = twinOf(name);
+  if (twin && confirm(`“${twin}” already exists. Use it instead of creating “${name}”?\n\nOK = use “${twin}”, Cancel = keep “${name}”.`)) { combo?.set(twin); return twin; }
+  return name;
+}
+function categoryCombo(input, extra = {}) {
+  return combo(input, {
+    noun: "category", create: true, items: categoryItems,
+    title: (n, total, q) => q ? (n ? "Matching categories" : "") : `${total} categor${total === 1 ? "y" : "ies"} in this app`,
+    empty: "No categories yet. Type a name to create one.", ...extra,
+  });
+}
+
+// ======================================================================================
+// Apps (multi-app support: every wallpaper belongs to one app)
+// ======================================================================================
+const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const initials = (name) => (String(name).replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("") || "?").toUpperCase();
+const avatar = (a, cls = "") => `<span class="av ${cls}" style="--h:${hue(a.id)}">${esc(initials(a.name))}</span>`;
+const appById = (id) => apps.find(a => a.id === id);
+function recents() { try { return JSON.parse(localStorage.getItem("recentApps") || "[]"); } catch { return []; } }
+
 async function loadApps() {
   const { data, error } = await sb.from("apps").select("*").order("created_at");
   if (error) { $("grid").innerHTML = `<div class="empty">${esc(error.message)} — run supabase/multi-app.sql</div>`; return false; }
   apps = data;
   let remembered = null; try { remembered = localStorage.getItem("app"); } catch {}
-  currentApp = apps.find(a => a.id === (currentApp || remembered))?.id || apps[0]?.id || null;
-  $("appSel").innerHTML = apps.map(a => `<option value="${esc(a.id)}" ${a.id === currentApp ? "selected" : ""}>${esc(a.name)} · ${esc(a.id)}</option>`).join("") || `<option>No apps yet</option>`;
+  currentApp = appById(currentApp || remembered)?.id || apps[0]?.id || null;
+  paintAppButton();
   return true;
 }
-$("appSel").onchange = () => { currentApp = $("appSel").value; try { localStorage.setItem("app", currentApp); } catch {} load(); };
-$("newApp").onclick = () => { $("appName").value = ""; $("appId").value = ""; msg("appMsg", ""); $("appModal").style.display = "flex"; $("appName").focus(); };
+function paintAppButton() {
+  const a = appById(currentApp);
+  $("appAv").outerHTML = a ? avatar(a).replace('class="av ', 'id="appAv" class="av ') : `<span class="av" id="appAv" style="--h:260">?</span>`;
+  $("appName0").textContent = a ? a.name : (apps.length ? "Pick an app" : "No apps yet");
+  $("appSub").textContent = a ? `${a.id}${rows.length && rows[0]?.app_id === a.id ? ` · ${rows.length} wallpapers` : ""}` : "";
+  $("upApp").textContent = a ? a.name : "the selected app";
+}
+function setApp(id) {
+  if (!appById(id)) return;
+  currentApp = id; view.cat = "";
+  try {
+    localStorage.setItem("app", id);
+    localStorage.setItem("recentApps", JSON.stringify([id, ...recents().filter(x => x !== id)].slice(0, 6)));
+  } catch {}
+  rows = []; paintAppButton(); load();
+}
+
+// App switcher: search box + Recent + All apps (A–Z).
+const appSearch = document.createElement("input");
+appSearch.type = "search"; appSearch.placeholder = "Search apps by name or id…"; appSearch.autocomplete = "off";
+const appHead = document.createElement("div"); appHead.className = "search"; appHead.innerHTML = ICON.search; appHead.append(appSearch);
+const appFoot = document.createElement("div");
+appFoot.innerHTML = `<small class="mouse-only">↑ ↓ to move · Enter to open · Esc to close</small><span class="touch-only"></span><button class="ghost" id="newApp">+ New app</button>`;
+const appMenu = {
+  anchor: $("appBtn"), header: appHead, footer: appFoot, minWidth: 380, maxHeight: 480,
+  empty: "No app matches", autoFirst: () => !!appSearch.value.trim(),
+  onOpen: () => $("appBtn").setAttribute("aria-expanded", "true"),
+  onClose: () => $("appBtn").setAttribute("aria-expanded", "false"),
+  onEscape: () => $("appBtn").focus(),
+  onPick: (it) => { Menu.close(); setApp(it.value); $("appBtn").focus(); },
+  sections() {
+    const q = appSearch.value.trim(), ql = q.toLowerCase();
+    const opt = (a, pre) => ({
+      value: a.id, preselect: pre && a.id === currentApp,
+      html: `${avatar(a, "sm")}<span class="nm"><span>${mark(a.name, q)}</span><small>${mark(a.id, q)}</small></span>${a.id === currentApp ? ICON.check : ""}`,
+    });
+    const sorted = [...apps].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    if (q) {
+      const hits = sorted.filter(a => a.name.toLowerCase().includes(ql) || a.id.includes(ql));
+      return [{ title: `${hits.length} match${hits.length === 1 ? "" : "es"}`, items: hits.map(a => opt(a, false)) }];
+    }
+    const rec = recents().map(appById).filter(Boolean).slice(0, 4);
+    return [
+      { title: "Recent", items: rec.length > 1 ? rec.map(a => opt(a, false)) : [] },
+      { title: `All apps · ${apps.length}`, items: sorted.map(a => opt(a, true)) },
+    ];
+  },
+};
+function openAppPicker() {
+  appSearch.value = ""; Menu.open(appMenu);
+  $("newApp").disabled = !session;
+  setTimeout(() => appSearch.focus(), 0);
+}
+$("appBtn").onclick = () => Menu.isOpenFor($("appBtn")) ? Menu.close() : openAppPicker();
+appSearch.addEventListener("input", () => Menu.refresh());
+appSearch.addEventListener("keydown", (e) => Menu.key(e));
+appFoot.addEventListener("click", (e) => { if (e.target.id === "newApp") { Menu.close(); openNewApp(); } });
+
+function openNewApp() {
+  $("appNameIn").value = ""; $("appIdIn").value = ""; delete $("appIdIn").dataset.touched; msg("appMsg", "");
+  $("appModal").style.display = "flex"; $("appNameIn").focus();
+}
 $("cancelApp").onclick = () => $("appModal").style.display = "none";
-$("appName").addEventListener("input", () => { if (!$("appId").dataset.touched) $("appId").value = slug($("appName").value).replace(/-/g, ""); });
-$("appId").addEventListener("input", () => { $("appId").dataset.touched = "1"; });
+$("appNameIn").addEventListener("input", () => { if (!$("appIdIn").dataset.touched) $("appIdIn").value = slug($("appNameIn").value).replace(/-/g, ""); });
+$("appIdIn").addEventListener("input", () => { $("appIdIn").dataset.touched = "1"; });
 $("okApp").onclick = async () => {
-  const name = $("appName").value.trim(), id = $("appId").value.trim().toLowerCase();
+  const name = $("appNameIn").value.trim(), id = $("appIdIn").value.trim().toLowerCase();
   if (!name || !/^[a-z0-9]{2,30}$/.test(id)) return msg("appMsg", "Name required; id must be 2–30 letters/numbers.", "err");
+  if (appById(id)) return msg("appMsg", `An app with id “${id}” already exists.`, "err");
   const { error } = await sb.from("apps").insert({ id, name });
   if (error) return msg("appMsg", error.message, "err");
-  $("appModal").style.display = "none"; currentApp = id; try { localStorage.setItem("app", id); } catch {}
-  await loadApps(); load();
+  $("appModal").style.display = "none";
+  await loadApps(); setApp(id); toast(`Created ${name}`, "ok");
 };
 
-// ---- Auth ----
+// Keyboard: Ctrl/⌘+K switches app, "/" jumps to search.
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); Menu.isOpenFor($("appBtn")) ? Menu.close() : openAppPicker(); }
+  else if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); $("q").focus(); }
+  else if (e.key === "Escape") document.querySelectorAll(".modal").forEach(m => { if (m.style.display === "flex") m.style.display = "none"; });
+});
+
+// ======================================================================================
+// Auth
+// ======================================================================================
 async function refreshSession() {
   const { data } = await sb.auth.getSession();
   session = data.session;
@@ -274,9 +650,7 @@ async function refreshSession() {
   $("add").classList.toggle("locked", !authed);
   $("logout").style.display = authed ? "" : "none";
   $("who").textContent = authed ? session.user.email : "Read-only · sign in to edit";
-  document.querySelectorAll(".tile button").forEach(b => b.disabled = !authed);
-  $("bulkApply").disabled = !authed || !$("bulkCat").value.trim();
-  $("newApp").disabled = !authed;
+  updateBulk();
   if (await loadApps()) load();
 }
 $("signin").onclick = async () => {
@@ -286,41 +660,51 @@ $("signin").onclick = async () => {
   $("password").value = "";
   refreshSession();
 };
+$("email").addEventListener("keydown", e => { if (e.key === "Enter") $("password").focus(); });
 $("password").addEventListener("keydown", e => { if (e.key === "Enter") $("signin").click(); });
 $("logout").onclick = async () => { await sb.auth.signOut(); refreshSession(); };
 
-// ---- List ----
+// ======================================================================================
+// Library
+// ======================================================================================
+let loadSeq = 0;
 async function load() {
   if (!currentApp) { $("grid").innerHTML = `<div class="empty">Create an app first.</div>`; return; }
+  const seq = ++loadSeq, app = currentApp;
+  if (!rows.length) $("grid").innerHTML = `<div class="empty">Loading…</div>`;
   // Same order as the apps request (data/remote/SupabaseApi.kt): pinned first, then newest.
-  const { data, error } = await sb.from("wallpapers").select("*").eq("app_id", currentApp)
+  const { data, error } = await sb.from("wallpapers").select("*").eq("app_id", app)
     .order("pinned_rank", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false });
+  if (seq !== loadSeq) return;   // a newer load (e.g. another app) started meanwhile
   if (error) {
     const fix = /pinned_rank|is_cover/.test(error.message) ? " — run supabase/ordering.sql (from an app repo) in Supabase Studio" : "";
     $("grid").innerHTML = `<div class="empty">${esc(error.message + fix)}</div>`; return;
   }
   rows = data;
-  const cats = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();
-  $("cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
-  const sel = $("filterCat").value;
-  $("filterCat").innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option ${c === sel ? "selected" : ""}>${esc(c)}</option>`).join("");
+  if (view.cat && !rows.some(r => r.category === view.cat)) view.cat = "";
+  paintAppButton();
   render();
 }
 const isPinned = (r) => r.pinned_rank !== null && r.pinned_rank !== undefined;
 // The search/filter controls, shared by the grid and the bulk category action.
 function shownRows() {
-  const q = $("q").value.trim().toLowerCase(), cat = $("filterCat").value, act = $("filterActive").value, flag = $("filterFlag").value;
+  const q = view.q.trim().toLowerCase();
   return rows.filter(r =>
-    (!q || (r.title || "").toLowerCase().includes(q)) &&
-    (!cat || r.category === cat) &&
-    (act === "" || String(r.is_active ? 1 : 0) === act) &&
-    (flag === "" || (flag === "pinned" ? isPinned(r) : r.is_cover)));
+    (!q || (r.title || "").toLowerCase().includes(q) || (r.category || "").toLowerCase().includes(q)) &&
+    (!view.cat || r.category === view.cat) &&
+    (view.status === "" || String(r.is_active ? 1 : 0) === view.status) &&
+    (view.flag === "" || (view.flag === "pinned" ? isPinned(r) : r.is_cover)));
 }
 function render() {
+  renderStats(); renderChips(); renderCatbar(); updateBulk();
   const list = shownRows(), pinned = rows.filter(isPinned);
   const dis = session ? "" : "disabled";
-  $("count").textContent = `${list.length} of ${rows.length}`;
-  if (!list.length) { $("grid").innerHTML = `<div class="empty">No wallpapers${rows.length ? " match" : " yet — add one on the left"}.</div>`; return; }
+  if (!list.length) {
+    const filtered = view.q || view.cat || view.status || view.flag;
+    $("grid").innerHTML = `<div class="empty">${rows.length ? `Nothing matches these filters. ${filtered ? `<button class="link" id="clearAll">Clear filters</button>` : ""}` : "No wallpapers yet — add some on the left."}</div>`;
+    $("clearAll")?.addEventListener("click", clearFilters);
+    return;
+  }
   $("grid").innerHTML = list.map(r => {
     const pos = pinned.indexOf(r);
     return `
@@ -331,7 +715,8 @@ function render() {
         ${r.is_active ? "" : `<span class="badge">Hidden</span>`}
       </div>
       <a href="${esc(r.image_url)}" target="_blank" rel="noopener"><img src="${esc(r.thumb_url)}" loading="lazy" alt=""></a>
-      <div class="meta"><div class="t">${esc(r.title || "Untitled")}</div><div class="c">${esc(r.category || "—")}</div></div>
+      <div class="meta"><div class="t" title="${esc(r.title || "Untitled")}">${esc(r.title || "Untitled")}</div>
+        <div class="c">${r.category ? `<button data-act="cat" title="Show only ${esc(r.category)}">${esc(r.category)}</button>` : "No category"}</div></div>
       <div class="acts">
         <button class="ghost" data-act="edit" ${dis}>Edit</button>
         <button class="ghost" data-act="toggle" ${dis}>${r.is_active ? "Hide" : "Show"}</button>
@@ -343,63 +728,173 @@ function render() {
         <button class="ghost" data-act="down" ${dis || (pos === pinned.length - 1 ? "disabled" : "")} title="Move down">▼</button>` : ""}
         <button class="ghost ${r.is_cover ? "on" : ""}" data-act="cover" ${dis || (r.category ? "" : "disabled")} title="${r.category ? `Image on the ${esc(r.category)} tile` : "Give it a category first"}">${r.is_cover ? "Cover ✓" : "Set as cover"}</button>
       </div>
-      <div class="edit">
-        <input type="text" data-f="title" value="${esc(r.title || "")}" placeholder="Title">
-        <input type="text" data-f="category" list="cats" value="${esc(r.category || "")}" placeholder="Category">
-        <select data-f="app_id">${apps.map(a => `<option value="${esc(a.id)}" ${a.id === r.app_id ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>
-        <div class="row"><button class="ghost" data-act="cancel">Cancel</button><button class="primary" style="margin:0" data-act="save">Save</button></div>
-      </div>
+      <div class="edit"></div>
     </div>`;
   }).join("");
 }
-["q", "filterCat", "filterActive", "filterFlag"].forEach(id => $(id).addEventListener("input", render));
+function renderStats() {
+  const active = rows.filter(r => r.is_active).length, pins = rows.filter(isPinned).length, cats = categoryStats().length;
+  const shown = shownRows().length;
+  $("stats").innerHTML = `<span><b>${shown}</b> shown of ${rows.length}</span><span><b>${active}</b> active</span><span><b>${rows.length - active}</b> hidden</span><span><b>${pins}</b> pinned</span><span><b>${cats}</b> categories</span>`;
+}
+function renderChips() {
+  const stats = categoryStats(), lower = new Map();
+  for (const c of stats) lower.set(c.name.toLowerCase(), (lower.get(c.name.toLowerCase()) || 0) + 1);
+  $("chips").innerHTML = `<button class="chip ${view.cat ? "" : "on"}" data-cat="">All <span class="n">${rows.length}</span></button>` +
+    stats.map(c => {
+      const dup = lower.get(c.name.toLowerCase()) > 1;
+      return `<button class="chip ${c.name === view.cat ? "on" : ""} ${dup ? "dup" : ""}" data-cat="${esc(c.name)}" ${dup ? `title="Another category differs only in capital letters — rename one to merge them"` : ""}>${esc(c.name)} <span class="n">${c.count}</span></button>`;
+    }).join("");
+  $("chips").querySelector(".chip.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+function renderCatbar() {
+  const bar = $("catbar");
+  if (!view.cat) { bar.hidden = true; return; }
+  const inCat = rows.filter(r => r.category === view.cat), cover = inCat.some(r => r.is_cover), twin = twinOf(view.cat);
+  bar.hidden = false;
+  bar.innerHTML = `<b>${esc(view.cat)}</b><span>${inCat.length} wallpaper${inCat.length === 1 ? "" : "s"} · ${cover ? "has a cover" : "no cover yet"}</span><span class="sp"></span>
+    <button class="ghost" id="addHere" ${session ? "" : "disabled"}>Upload here</button>
+    <button class="ghost" id="renameCat" ${session ? "" : "disabled"}>Rename / merge</button>
+    <button class="ghost" id="clearCat" title="Show all categories">✕</button>
+    ${twin ? `<span class="warn">“${esc(twin)}” differs only in capital letters. Use Rename / merge to fold this one into it.</span>` : ""}`;
+}
+function clearFilters() {
+  view.q = view.cat = view.status = view.flag = ""; $("q").value = "";
+  document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.v === ""));
+  render();
+}
+
+$("q").addEventListener("input", () => { view.q = $("q").value; render(); });
+for (const [id, key] of [["segStatus", "status"], ["segFlag", "flag"]]) {
+  $(id).addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    view[key] = b.dataset.v;
+    $(id).querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    render();
+  });
+}
+$("chips").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) { view.cat = c.dataset.cat; render(); } });
+$("catbar").addEventListener("click", (e) => {
+  if (e.target.id === "clearCat") { view.cat = ""; render(); }
+  else if (e.target.id === "renameCat") openRename(view.cat);
+  else if (e.target.id === "addHere") {
+    upCat.set(view.cat);
+    $("add").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("drop").animate([{ borderColor: "var(--cyan)" }, { borderColor: "var(--line2)" }], { duration: 900 });
+    toast(`New uploads will go to “${view.cat}”`);
+  }
+});
+$("refresh").onclick = async () => { await load(); toast("Refreshed", "ok"); };
+
+// ---- Bulk: move everything the filters show into one category ----
+const bulkCat = categoryCombo($("bulkCat"), { onPick: updateBulk, onInput: updateBulk });
+function updateBulk() {
+  const n = shownRows().length, cat = bulkCat?.value();
+  $("bulkApply").disabled = !session || !cat || !n;
+  $("bulkApply").textContent = n && cat ? `Apply to ${n}` : "Apply";
+}
+$("bulkApply").onclick = async () => {
+  let category = bulkCat.value(); if (!category) return;
+  category = resolveTwin(category, bulkCat);
+  const ids = shownRows().filter(r => r.category !== category).map(r => r.id);
+  if (!ids.length) return toast(`Everything shown is already in “${category}”`);
+  if (!confirm(`Move ${ids.length} wallpaper${ids.length > 1 ? "s" : ""} to “${category}”?`)) return;
+  // A cover belongs to its old category, so moving it drops the cover flag.
+  const { error } = await sb.from("wallpapers").update({ category, is_cover: false }).in("id", ids);
+  if (error) return toast(error.message, "err");
+  bulkCat.set(""); toast(`Moved ${ids.length} to “${category}”`, "ok");
+  if (view.cat) view.cat = category;
+  load();
+};
+
+// ---- Rename / merge a category ----
+const renameCombo = categoryCombo($("renameIn"), { title: (n, t, q) => q ? (n ? "Merge into an existing category" : "") : "Or merge into an existing category" });
+let renaming = null;
+function openRename(name) {
+  renaming = name; renameCombo.set(name); msg("renameMsg", "");
+  const n = rows.filter(r => r.category === name).length;
+  $("renameText").innerHTML = `<b>${esc(name)}</b> has ${n} wallpaper${n === 1 ? "" : "s"} in this app. Type a new name, or pick an existing category to merge them into it.`;
+  $("renameModal").style.display = "flex"; setTimeout(() => $("renameIn").focus(), 0);
+}
+$("cancelRename").onclick = () => { Menu.close(); $("renameModal").style.display = "none"; };
+$("renameIn").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.defaultPrevented) $("okRename").click(); });
+$("okRename").onclick = async () => {
+  const to = renameCombo.value();
+  if (!to) return msg("renameMsg", "Give it a name.", "err");
+  if (to === renaming) { $("renameModal").style.display = "none"; return; }
+  const merge = rows.some(r => r.category === to);
+  // Merging: the target keeps its own cover (one cover per category).
+  const patch = merge ? { category: to, is_cover: false } : { category: to };
+  const { error } = await sb.from("wallpapers").update(patch).eq("app_id", currentApp).eq("category", renaming);
+  if (error) return msg("renameMsg", error.message, "err");
+  Menu.close(); $("renameModal").style.display = "none";
+  toast(merge ? `Merged “${renaming}” into “${to}”` : `Renamed to “${to}”`, "ok");
+  view.cat = to; load();
+};
+
+// ---- Tile actions ----
 $("grid").addEventListener("keydown", (e) => {
-  const tile = e.target.closest(".tile.editing"); if (!tile) return;
+  const tile = e.target.closest(".tile.editing"); if (!tile || e.defaultPrevented) return;
   if (e.key === "Enter") tile.querySelector("[data-act=save]").click();
   if (e.key === "Escape") tile.querySelector("[data-act=cancel]").click();
 });
-// Bulk category: applies to whatever the current search/filters show.
-$("bulkCat").addEventListener("input", () => { $("bulkApply").disabled = !session || !$("bulkCat").value.trim(); });
-$("bulkApply").onclick = async () => {
-  const category = $("bulkCat").value.trim(), ids = shownRows().filter(r => r.category !== category).map(r => r.id);
-  if (!category || !ids.length) return;
-  if (!confirm(`Set category "${category}" on ${ids.length} wallpaper${ids.length > 1 ? "s" : ""}?`)) return;
-  // A cover belongs to its old category, so moving it drops the cover flag.
-  const { error } = await sb.from("wallpapers").update({ category, is_cover: false }).in("id", ids);
-  if (error) alert(error.message); else { $("bulkCat").value = ""; $("bulkApply").disabled = true; load(); }
-};
-$("refresh").onclick = load;
+function startEdit(tile, row) {
+  document.querySelectorAll(".tile.editing").forEach(t => t !== tile && t.classList.remove("editing"));
+  const ed = tile.querySelector(".edit");
+  ed.innerHTML = `
+    <label>Title</label><input type="text" data-f="title" value="${esc(row.title || "")}" placeholder="Title">
+    <label>Category</label><input type="text" data-f="category" placeholder="Category">
+    <label>App</label><input type="text" data-f="app" placeholder="App">
+    <div class="row"><button class="ghost" data-act="cancel">Cancel</button><button class="primary" data-act="save">Save</button></div>`;
+  const cat = categoryCombo(ed.querySelector("[data-f=category]"), { minWidth: 260 }); cat.set(row.category || "");
+  const app = combo(ed.querySelector("[data-f=app]"), {
+    strict: true, minWidth: 320, maxHeight: 360, empty: "No app matches",
+    title: (n, t, q) => q ? "" : "Move to another app",
+    items: () => [...apps].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: a.id, label: a.name, sub: a.id, av: avatar(a, "sm") })),
+  });
+  app.set(row.app_id);
+  tile._edit = { cat, app };
+  tile.classList.add("editing");
+  ed.querySelector("[data-f=title]").focus();
+}
 
 $("grid").addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-act]"); if (!btn) return;
-  const id = btn.closest(".tile").dataset.id, row = rows.find(r => r.id === id);
-  const tile = btn.closest(".tile");
-  if (btn.dataset.act === "edit") { tile.classList.add("editing"); tile.querySelector("[data-f=title]").focus(); return; }
-  if (btn.dataset.act === "cancel") { tile.classList.remove("editing"); return; }
-  if (btn.dataset.act === "save") {
+  const tile = btn.closest(".tile"), id = tile.dataset.id, row = rows.find(r => r.id === id);
+  const act = btn.dataset.act;
+  if (act === "cat") { view.cat = row.category; render(); $("chips").scrollIntoView({ block: "nearest" }); return; }
+  if (act === "edit") return startEdit(tile, row);
+  if (act === "cancel") { Menu.close(); tile.classList.remove("editing"); return; }
+  if (act === "save") {
     const title = tile.querySelector("[data-f=title]").value.trim() || null;
-    const category = tile.querySelector("[data-f=category]").value.trim() || null;
-    const app_id = tile.querySelector("[data-f=app_id]").value;
+    let category = tile._edit.cat.value() || null;
+    if (category && category !== row.category) category = resolveTwin(category, tile._edit.cat);
+    const app_id = tile._edit.app.value() || row.app_id;
     const patch = { title, category, app_id };
     // A cover belongs to its category, and a pin to its app's list: moving drops them.
     if (category !== row.category || app_id !== row.app_id) patch.is_cover = false;
     if (app_id !== row.app_id) patch.pinned_rank = null;
+    Menu.close();
     const { error } = await sb.from("wallpapers").update(patch).eq("id", id);
-    if (error) alert(error.message); else load();
+    if (error) return toast(error.message, "err");
+    toast(app_id !== row.app_id ? `Moved to ${appById(app_id)?.name || app_id}` : "Saved", "ok");
+    load();
     return;
   }
-  if (btn.dataset.act === "toggle") {
+  if (act === "toggle") {
+    btn.disabled = true;
     const { error } = await sb.from("wallpapers").update({ is_active: !row.is_active }).eq("id", id);
-    if (error) alert(error.message); else load();
-  } else if (btn.dataset.act === "del") {
-    confirmDelete(row);
-  } else if (["pin", "up", "down"].includes(btn.dataset.act)) {
-    btn.disabled = true;
-    try { await reorderPinned(row, btn.dataset.act); } catch (err) { alert(err.message || err); }
+    if (error) toast(error.message, "err"); else toast(row.is_active ? "Hidden from the app" : "Visible in the app again", "ok");
     load();
-  } else if (btn.dataset.act === "cover") {
+  } else if (act === "del") {
+    confirmDelete(row);
+  } else if (["pin", "up", "down"].includes(act)) {
     btn.disabled = true;
-    try { await toggleCover(row); } catch (err) { alert(err.message || err); }
+    try { await reorderPinned(row, act); } catch (err) { toast(err.message || String(err), "err"); }
+    load();
+  } else if (act === "cover") {
+    btn.disabled = true;
+    try { await toggleCover(row); toast(row.is_cover ? "Cover removed" : `Cover for “${row.category}” set`, "ok"); } catch (err) { toast(err.message || String(err), "err"); }
     load();
   }
 });
@@ -443,62 +938,84 @@ function confirmDelete(row) {
   $("okDel").onclick = async () => {
     $("confirm").style.display = "none";
     const { error } = await sb.from("wallpapers").delete().eq("id", row.id);
-    if (error) return alert(error.message);
-    try { await removeFiles([row.image_url, row.thumb_url]); } catch (e) { alert(`Row deleted but file removal failed: ${e.message || e}`); }
+    if (error) return toast(error.message, "err");
+    try { await removeFiles([row.image_url, row.thumb_url]); toast("Deleted", "ok"); }
+    catch (e) { toast(`Row deleted but file removal failed: ${e.message || e}`, "err"); }
     load();
   };
 }
 $("cancelDel").onclick = () => $("confirm").style.display = "none";
+document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", (e) => { if (e.target === m) { Menu.close(); m.style.display = "none"; } }));
 
-// ---- Upload ----
+// ======================================================================================
+// Upload
+// ======================================================================================
+const upCat = categoryCombo($("category"));
 const drop = $("drop"), files = $("files");
-drop.onclick = (e) => { if (e.target !== files) files.click(); };
+drop.onclick = (e) => { if (e.target.closest(".x")) return; if (e.target !== files) files.click(); };
 drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
-drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); setPending([...e.dataTransfer.files]); };
-files.onchange = () => setPending([...files.files]);
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); setPending([...pending, ...e.dataTransfer.files]); };
+files.onchange = () => { setPending([...pending, ...files.files]); files.value = ""; };
+$("pv").addEventListener("click", (e) => {
+  const x = e.target.closest(".x"); if (!x) return;
+  e.stopPropagation(); pending.splice(+x.dataset.i, 1); setPending(pending);
+});
 
+const previews = new Map();
 function setPending(list) {
   pending = list.filter(f => f.type.startsWith("image/"));
-  $("pv").innerHTML = pending.map(f => `<img src="${URL.createObjectURL(f)}" alt="">`).join("");
-  $("dropText").innerHTML = pending.length ? `${pending.length} image${pending.length > 1 ? "s" : ""} selected`
-    : `<span class="mouse-only">Drop images here or click to choose</span><span class="touch-only">Tap to choose images from your gallery</span>`;
+  for (const [f, url] of previews) if (!pending.includes(f)) { URL.revokeObjectURL(url); previews.delete(f); }
+  for (const f of pending) if (!previews.has(f)) previews.set(f, URL.createObjectURL(f));
+  $("pv").innerHTML = pending.map((f, i) => `<div class="th"><img src="${previews.get(f)}" alt="" title="${esc(f.name)}"><button class="x" data-i="${i}" title="Remove">✕</button></div>`).join("");
+  $("dropText").innerHTML = pending.length
+    ? `<b style="color:var(--text)">${pending.length} image${pending.length > 1 ? "s" : ""} ready</b><br><small>Click to add more · ✕ removes one</small>`
+    : `<span class="mouse-only">Drop images here or click to choose</span><span class="touch-only">Tap to choose images from your gallery</span><br><small>Portrait, 1080×1920 or larger. Several at once is fine.</small>`;
+  $("title").disabled = pending.length > 1;
   $("upload").disabled = !pending.length;
+  $("upload").textContent = pending.length > 1 ? `Upload ${pending.length} wallpapers` : "Upload";
 }
+setPending([]);
 
 $("upload").onclick = async () => {
-  const category = $("category").value.trim() || null;
+  let category = upCat.value() || null;
+  if (category) category = resolveTwin(category, upCat);
   const titleInput = $("title").value.trim();
   const bar = $("prog"); bar.style.display = "block";
   $("upload").disabled = true; msg("addMsg", "");
+  const app = currentApp, batch = [...pending];
   let done = 0;
   try {
-    for (const f of pending) {
+    for (const f of batch) {
       const stem = f.name.replace(/\.[^.]+$/, "");
-      const title = (pending.length === 1 && titleInput) ? titleInput : prettify(stem);
+      const title = (batch.length === 1 && titleInput) ? titleInput : prettify(stem);
       const base = `${Date.now()}-${slug(stem)}`;
 
-      msg("addMsg", `Preparing ${title}…`);
+      msg("addMsg", `Preparing ${title} (${done + 1}/${batch.length})…`);
       const bitmap = await decode(f);
       // One at a time: two 4K canvases at once can run a phone out of memory.
       const fullBlob = await encode(bitmap, FULL_MAX.w, FULL_MAX.h, "image/webp", FULL_QUALITY);
       const thumbBlob = await encode(bitmap, THUMB_WIDTH, Infinity, "image/jpeg", THUMB_QUALITY);
       bitmap.close?.();
-      msg("addMsg", `Uploading ${title} (${(fullBlob.size / 1024 / 1024).toFixed(1)} MB)…`);
+      msg("addMsg", `Uploading ${title} (${(fullBlob.size / 1024 / 1024).toFixed(1)} MB, ${done + 1}/${batch.length})…`);
       const ext = fullBlob.type === "image/webp" ? "webp" : "jpg";
-      const full = await put(`${currentApp}/full/${base}.${ext}`, fullBlob, fullBlob.type);
-      const thumb = await put(`${currentApp}/thumbs/${base}.jpg`, thumbBlob, "image/jpeg");
+      const full = await put(`${app}/full/${base}.${ext}`, fullBlob, fullBlob.type);
+      const thumb = await put(`${app}/thumbs/${base}.jpg`, thumbBlob, "image/jpeg");
 
-      const { error } = await sb.from("wallpapers").insert({ title, category, image_url: full, thumb_url: thumb, app_id: currentApp });
+      const { error } = await sb.from("wallpapers").insert({ title, category, image_url: full, thumb_url: thumb, app_id: app });
       if (error) throw error;
-      done++; bar.firstElementChild.style.width = `${(done / pending.length) * 100}%`;
+      done++; bar.firstElementChild.style.width = `${(done / batch.length) * 100}%`;
     }
-    msg("addMsg", `Added ${done} wallpaper${done > 1 ? "s" : ""}.`, "ok");
-    setPending([]); $("title").value = ""; files.value = "";
-    load();
+    const where = `${appById(app)?.name || app}${category ? ` · ${category}` : ""}`;
+    msg("addMsg", `Added ${done} wallpaper${done > 1 ? "s" : ""} to ${where}.`, "ok");
+    toast(`Added ${done} wallpaper${done > 1 ? "s" : ""}`, "ok");
+    setPending([]); $("title").value = "";
+    if (app === currentApp) load();
   } catch (err) {
-    msg("addMsg", `${err.message || err} (${done} of ${pending.length} added)`, "err");
-    $("upload").disabled = false;
+    // Keep only the files that did not make it, so a retry doesn't upload duplicates.
+    setPending(batch.slice(done));
+    msg("addMsg", `${err.message || err} (${done} of ${batch.length} added — press Upload to retry the rest)`, "err");
+    if (done && app === currentApp) load();
   } finally {
     setTimeout(() => { bar.style.display = "none"; bar.firstElementChild.style.width = "0"; }, 1200);
   }
@@ -556,7 +1073,9 @@ async function encode(bitmap, maxW, maxH, type, quality) {
   return blob;
 }
 
-// ---- Helpers ----
+// ======================================================================================
+// Helpers
+// ======================================================================================
 function storagePath(url) {
   const marker = `/object/public/${BUCKET}/`;
   const i = (url || "").indexOf(marker);
@@ -565,7 +1084,15 @@ function storagePath(url) {
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "wallpaper";
 const prettify = (s) => s.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, c => c.toUpperCase());
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function mark(text, q) {
+  const t = String(text ?? ""), i = q ? t.toLowerCase().indexOf(q.toLowerCase()) : -1;
+  return i < 0 ? esc(t) : esc(t.slice(0, i)) + "<mark>" + esc(t.slice(i, i + q.length)) + "</mark>" + esc(t.slice(i + q.length));
+}
 function msg(id, text, cls = "") { const el = $(id); el.textContent = text; el.className = `msg ${cls}`; }
+function toast(text, kind = "") {
+  const t = document.createElement("div"); t.className = `toast ${kind}`; t.textContent = text;
+  $("toasts").append(t); setTimeout(() => t.remove(), kind === "err" ? 6000 : 2600);
+}
 
 sb.auth.onAuthStateChange(() => refreshSession());
 refreshSession();
