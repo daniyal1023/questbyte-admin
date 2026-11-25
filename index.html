@@ -142,6 +142,15 @@
   .chip.on .n { color: #C7B8FF; }
   .chip.dup { border-style: dashed; border-color: rgba(255,181,71,.6); }
   .chip.dup::after { content: "!"; font-size: 11px; font-weight: 800; color: var(--warn); }
+  input[readonly] { opacity: .55; cursor: not-allowed; }
+  .chip.edit { border-style: dashed; color: var(--cyan); }
+  .catlist { margin-top: 14px; max-height: min(52vh, 420px); overflow-y: auto; overflow-x: hidden; border: 1px solid var(--line); border-radius: 12px; }
+  .catlist .ci { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--line); }
+  .catlist .ci:last-child { border-bottom: 0; }
+  .catlist .ci b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .catlist .ci .n { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .catlist .ci .warn { font-size: 11px; color: var(--warn); }
+  .catlist .ci button { margin: 0; padding: 5px 12px; font-size: 13px; }
   .catbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
   .catbar b { color: var(--text); font-size: 14px; }
   .catbar .sp { flex: 1; }
@@ -259,6 +268,9 @@
     <kbd>Ctrl K</kbd>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="m6 9 6 6 6-6"/></svg>
   </button>
+  <button class="ghost icon-btn" id="editApp" title="Rename this app" aria-label="Rename this app" disabled>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+  </button>
   <div class="spacer"></div>
   <div class="who" id="who"></div>
   <button class="ghost" id="logout" style="display:none">Sign out</button>
@@ -332,10 +344,11 @@
 
 <div class="modal" id="appModal">
   <div class="card">
-    <h2>New app</h2>
+    <h2 id="appTitle">New app</h2>
     <label>Display name</label><input type="text" id="appNameIn" placeholder="e.g. Anime Wallpapers">
-    <label>App id <span class="note">(letters/numbers, no spaces — goes into the app build as APP_ID)</span></label>
+    <label>App id <span class="note" id="appIdNote">(letters/numbers, no spaces — goes into the app build as APP_ID)</span></label>
     <input type="text" id="appIdIn" placeholder="e.g. anime">
+    <p class="hint" id="appHint" hidden>This is the name shown in this console. The name on the phone and in the Play Store comes from the app build and the store listing.</p>
     <div class="msg" id="appMsg"></div>
     <div class="row"><button class="ghost" id="cancelApp">Cancel</button><button class="primary" id="okApp">Create</button></div>
   </div>
@@ -348,6 +361,14 @@
     <input type="text" id="renameIn" placeholder="New name, or pick one to merge into">
     <div class="msg" id="renameMsg"></div>
     <div class="row"><button class="ghost" id="cancelRename">Cancel</button><button class="primary" id="okRename">Rename</button></div>
+  </div>
+</div>
+<div class="modal" id="catsModal">
+  <div class="card">
+    <h2>Edit categories</h2>
+    <p id="catsText"></p>
+    <div class="catlist" id="catList"></div>
+    <div class="row"><button class="ghost" id="closeCats">Done</button></div>
   </div>
 </div>
 <div class="modal" id="confirm">
@@ -615,15 +636,38 @@ appSearch.addEventListener("input", () => Menu.refresh());
 appSearch.addEventListener("keydown", (e) => Menu.key(e));
 appFoot.addEventListener("click", (e) => { if (e.target.id === "newApp") { Menu.close(); openNewApp(); } });
 
-function openNewApp() {
-  $("appNameIn").value = ""; $("appIdIn").value = ""; delete $("appIdIn").dataset.touched; msg("appMsg", "");
-  $("appModal").style.display = "flex"; $("appNameIn").focus();
+// One dialog for "New app" and "Rename app". The id can't change: every wallpaper row and the
+// app build (APP_ID) point at it.
+let editingApp = null;
+function showAppModal(app) {
+  editingApp = app ? app.id : null;
+  $("appTitle").textContent = app ? "Rename app" : "New app";
+  $("okApp").textContent = app ? "Save" : "Create";
+  $("appNameIn").value = app ? app.name : ""; $("appIdIn").value = app ? app.id : "";
+  $("appIdIn").readOnly = !!app;
+  $("appIdNote").textContent = app ? "(can't be changed — the app build and every wallpaper use it)" : "(letters/numbers, no spaces — goes into the app build as APP_ID)";
+  $("appHint").hidden = !app;
+  delete $("appIdIn").dataset.touched; msg("appMsg", "");
+  $("appModal").style.display = "flex"; $("appNameIn").focus(); if (app) $("appNameIn").select();
 }
+const openNewApp = () => showAppModal(null);
+$("editApp").onclick = () => { const a = appById(currentApp); if (a) showAppModal(a); };
+$("appNameIn").addEventListener("keydown", (e) => { if (e.key === "Enter") $("okApp").click(); });
 $("cancelApp").onclick = () => $("appModal").style.display = "none";
-$("appNameIn").addEventListener("input", () => { if (!$("appIdIn").dataset.touched) $("appIdIn").value = slug($("appNameIn").value).replace(/-/g, ""); });
+$("appNameIn").addEventListener("input", () => { if (!editingApp && !$("appIdIn").dataset.touched) $("appIdIn").value = slug($("appNameIn").value).replace(/-/g, ""); });
 $("appIdIn").addEventListener("input", () => { $("appIdIn").dataset.touched = "1"; });
 $("okApp").onclick = async () => {
   const name = $("appNameIn").value.trim(), id = $("appIdIn").value.trim().toLowerCase();
+  if (editingApp) {
+    if (!name) return msg("appMsg", "Give it a name.", "err");
+    const old = appById(editingApp)?.name;
+    if (name === old) { $("appModal").style.display = "none"; return; }
+    const { error } = await sb.from("apps").update({ name }).eq("id", editingApp);
+    if (error) return msg("appMsg", error.message, "err");
+    $("appModal").style.display = "none";
+    await loadApps(); toast(`Renamed to ${name}`, "ok");
+    return;
+  }
   if (!name || !/^[a-z0-9]{2,30}$/.test(id)) return msg("appMsg", "Name required; id must be 2–30 letters/numbers.", "err");
   if (appById(id)) return msg("appMsg", `An app with id “${id}” already exists.`, "err");
   const { error } = await sb.from("apps").insert({ id, name });
@@ -649,6 +693,8 @@ async function refreshSession() {
   $("login").style.display = authed ? "none" : "";
   $("add").classList.toggle("locked", !authed);
   $("logout").style.display = authed ? "" : "none";
+  $("editApp").disabled = !authed;
+  $("editApp").title = authed ? "Rename this app" : "Sign in to rename this app";
   $("who").textContent = authed ? session.user.email : "Read-only · sign in to edit";
   updateBulk();
   if (await loadApps()) load();
@@ -744,7 +790,8 @@ function renderChips() {
     stats.map(c => {
       const dup = lower.get(c.name.toLowerCase()) > 1;
       return `<button class="chip ${c.name === view.cat ? "on" : ""} ${dup ? "dup" : ""}" data-cat="${esc(c.name)}" ${dup ? `title="Another category differs only in capital letters — rename one to merge them"` : ""}>${esc(c.name)} <span class="n">${c.count}</span></button>`;
-    }).join("");
+    }).join("") +
+    (stats.length ? `<button class="chip edit" id="editCats" title="Rename or merge categories">✎ Edit categories</button>` : "");
   $("chips").querySelector(".chip.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 function renderCatbar() {
@@ -754,7 +801,7 @@ function renderCatbar() {
   bar.hidden = false;
   bar.innerHTML = `<b>${esc(view.cat)}</b><span>${inCat.length} wallpaper${inCat.length === 1 ? "" : "s"} · ${cover ? "has a cover" : "no cover yet"}</span><span class="sp"></span>
     <button class="ghost" id="addHere" ${session ? "" : "disabled"}>Upload here</button>
-    <button class="ghost" id="renameCat" ${session ? "" : "disabled"}>Rename / merge</button>
+    <button class="ghost" id="renameCat" ${session ? "" : "disabled"}>✎ Rename</button>
     <button class="ghost" id="clearCat" title="Show all categories">✕</button>
     ${twin ? `<span class="warn">“${esc(twin)}” differs only in capital letters. Use Rename / merge to fold this one into it.</span>` : ""}`;
 }
@@ -773,7 +820,27 @@ for (const [id, key] of [["segStatus", "status"], ["segFlag", "flag"]]) {
     render();
   });
 }
-$("chips").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) { view.cat = c.dataset.cat; render(); } });
+$("chips").addEventListener("click", (e) => {
+  const c = e.target.closest(".chip"); if (!c) return;
+  if (c.id === "editCats") return openCats();
+  view.cat = c.dataset.cat; render();
+});
+
+// ---- Edit categories: every category of this app, each with a Rename button ----
+function openCats() {
+  const stats = categoryStats(), a = appById(currentApp);
+  $("catsText").innerHTML = `${stats.length} categor${stats.length === 1 ? "y" : "ies"} in <b>${esc(a?.name || currentApp)}</b>. Rename one, or rename it to an existing name to merge them.${session ? "" : " Sign in to make changes."}`;
+  $("catList").innerHTML = stats.map(c => {
+    const twin = twinOf(c.name);
+    return `<div class="ci"><b title="${esc(c.name)}">${esc(c.name)}</b>${twin ? `<span class="warn" title="Same as “${esc(twin)}” apart from capital letters">same as ${esc(twin)}?</span>` : ""}<span class="n">${c.count}</span><button class="ghost" data-cat="${esc(c.name)}" ${session ? "" : "disabled"}>Rename</button></div>`;
+  }).join("");
+  $("catsModal").style.display = "flex";
+}
+$("closeCats").onclick = () => $("catsModal").style.display = "none";
+$("catList").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-cat]"); if (!b) return;
+  $("catsModal").style.display = "none"; openRename(b.dataset.cat);
+});
 $("catbar").addEventListener("click", (e) => {
   if (e.target.id === "clearCat") { view.cat = ""; render(); }
   else if (e.target.id === "renameCat") openRename(view.cat);
