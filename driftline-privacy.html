@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Driftline VPN | Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7fb; --card: #fff; --text: #1c1f33; --muted: #5a607a; --accent: #1f6fd1; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #10162a; --card: #1a2240; --text: #eef0ff; --muted: #a9afd6; --accent: #8fc0ff; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 1rem/1.6 system-ui, sans-serif; }
+  main { box-sizing: border-box; max-width: 45rem; margin: 2rem auto; padding: clamp(1rem, 4vw, 2rem); background: var(--card); border-radius: 1rem; }
+  h1 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
+  h2 { margin: 1.5rem 0 .5rem; font-size: 1.2rem; }
+  .updated { color: var(--muted); font-size: .875rem; }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Driftline VPN Privacy Policy</h1>
+  <p class="updated">Last updated <time datetime="2026-11-29">29 November 2026</time></p>
+  <p>Questbyte Labs publishes Driftline VPN for Android (package <code>com.questbyte.driftline</code>). Driftline is a WireGuard VPN client: it connects your phone to WireGuard servers that you add yourself, from a VPN provider or a server you run. Driftline has no account, no VPN servers of its own, no ads, and no analytics. Questbyte Labs does not receive any data from the app.</p>
+
+  <h2>What the app stores on your device</h2>
+  <p>The app keeps these on your phone only:</p>
+  <ul>
+    <li>The WireGuard configs you import or paste, including their private keys, server addresses, and any place name you give a server.</li>
+    <li>Your settings, such as light or dark theme, and your favorite and recently used servers.</li>
+  </ul>
+  <p>Configs are kept in app-private storage that other apps can't read. They are left out of Android backups, so they are never copied to Google Drive or another device. Questbyte Labs never receives a copy.</p>
+
+  <h2>Your VPN traffic</h2>
+  <p>When you connect, Android's VpnService sends your phone's internet traffic through an encrypted WireGuard tunnel to the server in the config you chose. Driftline doesn't route traffic anywhere else. The app never records the sites you visit or the DNS lookups you make, and it has no screen that could show them.</p>
+  <p>Whoever runs the WireGuard server you connect to can see your traffic as it leaves that server, as with any VPN. Their own privacy policy covers what they do with it. Questbyte Labs runs no VPN servers and can't see your traffic.</p>
+
+  <h2>Network connections the app makes</h2>
+  <ul>
+    <li><strong>The WireGuard tunnel</strong>, to the server you connect to.</li>
+    <li><strong>Latency checks.</strong> To sort servers by ping, the app sends a ping, or a TCP connection attempt, from your phone to each server you've added. Server hostnames are looked up with your phone's normal DNS resolver. These checks go only to your servers and carry no personal data.</li>
+    <li><strong>Links you open.</strong> The app lists some third-party sites that publish free WireGuard configs. If you tap one and confirm, it opens in your browser. Those sites are not run or checked by Questbyte Labs, and their own privacy policies apply.</li>
+  </ul>
+
+  <h2>Notifications</h2>
+  <p>While the VPN is connected, Android shows an ongoing notification with a Disconnect button. Driftline doesn't send any other notifications. On Android 13 and later you can allow or block notifications for Driftline in Android settings.</p>
+
+  <h2>Deleting your data</h2>
+  <p>You can remove any server in the app from the Locations screen. To remove everything, clear Driftline's storage in Android settings or uninstall the app. Uninstalling deletes your configs, their keys, and your settings. If you email us, we use your address and message to reply and keep the conversation only as long as needed to handle your request. You can ask us to delete that correspondence at the address below.</p>
+
+  <h2>Children</h2>
+  <p>Driftline is intended for adults. It isn't directed at children under 13, and the app doesn't collect personal information from anyone.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If the app's data handling changes, we will update this page and the date at the top.</p>
+
+  <h2>Contact</h2>
+  <p>For privacy questions or data requests, email Questbyte Labs at <a href="mailto:daniyaliqbal1023@gmail.com">daniyaliqbal1023@gmail.com</a>.</p>
+</main>
+</body>
+</html>
